@@ -1,0 +1,12 @@
+{
+  "domain": "ge_cloud",
+  "name": "GE Cloud",
+  "codeowners": ["@springfall2008"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/springfall2008/ge_cloud",
+  "integration_type": "hub",
+  "iot_class": "cloud_polling",
+  "requirements": [],
+  "version": "0.1.0"
+}
