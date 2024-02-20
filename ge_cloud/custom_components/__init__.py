@@ -47,6 +47,8 @@ async def async_setup_entry(hass, entry):
 async def async_setup_dependencies(hass, config):
     """Setup the coordinator and api client which will be shared by various entities"""
     account_id = config[CONFIG_ACCOUNT_ID]
+    api_key = config[CONFIG_MAIN_API_KEY]
+    _LOGGER.info("Setting up dependencies for account {} api_key {}".format(account_id, api_key))
 
 
 async def async_unload_entry(hass, entry):

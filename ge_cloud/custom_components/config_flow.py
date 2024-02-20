@@ -29,6 +29,10 @@ async def async_validate_main_config(data):
     """
     errors = {}
 
+    account_id = data[CONFIG_ACCOUNT_ID]
+    api_key = data[CONFIG_MAIN_API_KEY]
+    _LOGGER.info("Validating main config for account {} api_key {}".format(account_id, api_key))
+
     if 0:
         client = OctopusEnergyApiClient(data[CONFIG_MAIN_API_KEY])
 
@@ -60,29 +64,13 @@ class GECloudConfigFlow(ConfigFlow, domain=DOMAIN):
         if len(errors) < 1:
             user_input[CONFIG_KIND] = CONFIG_KIND_ACCOUNT
             return self.async_create_entry(
-                title=user_input[CONFIG_ACCOUNT_ID], data=user_input
+                title="GE Cloud", data=user_input
             )
 
         return self.async_show_form(
-            step_id="account", data_schema=DATA_SCHEMA_ACCOUNT, errors=errors
+            step_id="account", data_schema=vol.Schema(DATA_SCHEMA_ACCOUNT), errors=errors
         )
 
     # The schema of the config flow
-    async def async_step_user(self, user_input):
-        is_account_setup = False
-        for entry in self._async_current_entries(include_ignore=False):
-            if CONFIG_MAIN_API_KEY in entry.data:
-                is_account_setup = True
-                break
-
-        if user_input is not None:
-            if CONFIG_KIND in user_input:
-                if user_input[CONFIG_KIND] == CONFIG_KIND_ACCOUNT:
-                    return await self.async_step_account(user_input)
-
-            return self.async_abort(reason="unexpected_entry")
-
-        if is_account_setup:
-            return
-
-        return self.async_show_form(step_id="account", data_schema=DATA_SCHEMA_ACCOUNT)
+    async def async_step_user(self, user_input=None):
+        return self.async_show_form(step_id="account", data_schema=vol.Schema(DATA_SCHEMA_ACCOUNT))

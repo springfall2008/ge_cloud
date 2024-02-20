@@ -12,7 +12,11 @@ DATA_CONFIG = "CONFIG"
 CONFIG_MAIN_API_KEY = "api_key"
 CONFIG_ACCOUNT_ID = "account_id"
 
-DATA_SCHEMA_ACCOUNT = vol.Schema({
+DATA_SCHEMA_ACCOUNT = {
+  vol.Required(CONFIG_ACCOUNT_ID): str,
+  vol.Required(CONFIG_MAIN_API_KEY): str
+}
+XDATA_SCHEMA_ACCOUNT = vol.Schema({
   vol.Required(CONFIG_ACCOUNT_ID): str,
   vol.Required(CONFIG_MAIN_API_KEY): str
 })
