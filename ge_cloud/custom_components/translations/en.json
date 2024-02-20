@@ -1,0 +1,18 @@
+{
+    "title": "Givenergy Cloud",
+    "config": {
+        "step": {
+            "account": {
+                "description": "Setup your basic account information.",
+                "data": {
+                    "account_id": "Your account Id (e.g. A-AAAA1111)",
+                    "api_key": "Api key"
+                },
+                "data_description": {
+                    "account_id": "This is the serial number of your GE inverter",
+                    "api_key": "This can be found in the GE Cloud portal under API Key"
+                }
+            }
+        }
+    }
+}
