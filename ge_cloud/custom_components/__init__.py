@@ -6,7 +6,8 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.components.recorder import get_instance
 from homeassistant.util.dt import utcnow
 from homeassistant.const import EVENT_HOMEASSISTANT_STOP
-
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
 
 from .const import CONFIG_ACCOUNT_ID, CONFIG_MAIN_API_KEY, DOMAIN
 
@@ -16,7 +17,7 @@ ACCOUNT_PLATFORMS = [
 _LOGGER = logging.getLogger(__name__)
 
 
-async def async_setup(hass, config):
+async def async_setup(hass: HomeAssistant, config):
     """
     This is called by Home Assistant when setting up the component.
     """
@@ -27,7 +28,7 @@ async def async_setup(hass, config):
     return True
 
 
-async def async_setup_entry(hass, entry):
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """This is called from the config flow."""
     hass.data.setdefault(DOMAIN, {})
 
@@ -44,14 +45,14 @@ async def async_setup_entry(hass, entry):
     return True
 
 
-async def async_setup_dependencies(hass, config):
+async def async_setup_dependencies(hass: HomeAssistant, config):
     """Setup the coordinator and api client which will be shared by various entities"""
     account_id = config[CONFIG_ACCOUNT_ID]
     api_key = config[CONFIG_MAIN_API_KEY]
     _LOGGER.info("Setting up dependencies for account {} api_key {}".format(account_id, api_key))
 
 
-async def async_unload_entry(hass, entry):
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
     unload_ok = False
     if CONFIG_MAIN_API_KEY in entry.data:

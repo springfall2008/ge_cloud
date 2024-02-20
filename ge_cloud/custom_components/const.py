@@ -13,10 +13,9 @@ CONFIG_MAIN_API_KEY = "api_key"
 CONFIG_ACCOUNT_ID = "account_id"
 
 DATA_SCHEMA_ACCOUNT = {
-  vol.Required(CONFIG_ACCOUNT_ID): str,
-  vol.Required(CONFIG_MAIN_API_KEY): str
+  vol.Required(CONFIG_ACCOUNT_ID, default="serial"): str,
+  vol.Required(CONFIG_MAIN_API_KEY, default="api_key"): str
 }
-XDATA_SCHEMA_ACCOUNT = vol.Schema({
-  vol.Required(CONFIG_ACCOUNT_ID): str,
-  vol.Required(CONFIG_MAIN_API_KEY): str
-})
+
+GE_API_URL = "https://api.givenergy.cloud/v1/"
+GE_API_INVERTER_STATUS = "inverter/{inverter_serial_number}/system-data/latest"

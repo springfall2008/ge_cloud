@@ -8,6 +8,9 @@ from homeassistant.helpers import selector
 from homeassistant.components.sensor import (
     SensorDeviceClass,
 )
+from homeassistant import config_entries, exceptions
+from homeassistant.core import HomeAssistant
+
 from .const import (
     CONFIG_MAIN_API_KEY,
     DOMAIN,
@@ -17,6 +20,7 @@ from .const import (
     DATA_SCHEMA_ACCOUNT,
     CONFIG_ACCOUNT_ID,
 )
+from .api import GECloudApiClient
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -32,20 +36,11 @@ async def async_validate_main_config(data):
     account_id = data[CONFIG_ACCOUNT_ID]
     api_key = data[CONFIG_MAIN_API_KEY]
     _LOGGER.info("Validating main config for account {} api_key {}".format(account_id, api_key))
-
-    if 0:
-        client = OctopusEnergyApiClient(data[CONFIG_MAIN_API_KEY])
-
-        try:
-            account_info = await client.async_get_account(data[CONFIG_ACCOUNT_ID])
-        except RequestException:
-            # Treat errors as not finding the account
-            account_info = None
-        except ServerException:
-            errors[CONFIG_MAIN_API_KEY] = "server_error"
-
-        if CONFIG_MAIN_API_KEY not in errors and account_info is None:
-            errors[CONFIG_MAIN_API_KEY] = "account_not_found"
+    api = GECloudApiClient(account_id, api_key)
+    status = await api.async_get_inverter_status()
+    _LOGGER.info("Got status {}".format(status))
+    if status is None:
+        errors[CONFIG_MAIN_API_KEY] = "invalid_api_key"
 
     return errors
 

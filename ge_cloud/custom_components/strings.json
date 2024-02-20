@@ -7,7 +7,8 @@
                 "description": "Setup your basic account information.",
                 "data": {
                     "account_id": "Your account ID",
-                    "api_key": "Your Api key"
+                    "api_key": "Your Api key",
+                    "other": "Other"
                 },
                 "data_description": {
                     "account_id": "This is the serial number of your GE inverter",
