@@ -9,20 +9,20 @@ from homeassistant.const import EVENT_HOMEASSISTANT_STOP
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from .const import CONFIG_ACCOUNT_ID, CONFIG_MAIN_API_KEY, DOMAIN
+from .const import CONFIG_ACCOUNT_ID, CONFIG_MAIN_API_KEY, DOMAIN, DATA_CLIENT, CONFIG_KIND_ACCOUNT, CONFIG_KIND
 
 ACCOUNT_PLATFORMS = [
     "sensor",
 ]
 _LOGGER = logging.getLogger(__name__)
 
+from .coordinator import GECloudCoordinator
 
 async def async_setup(hass: HomeAssistant, config):
     """
     This is called by Home Assistant when setting up the component.
     """
-    hass.states.async_set("ge_cloud.status", "Setup")
-    _LOGGER.info("Setting up ge_cloud")
+    _LOGGER.info("Setting up ge_cloud config {}".format(config))
 
     # Return boolean to indicate that initialization was successful.
     return True
@@ -30,18 +30,18 @@ async def async_setup(hass: HomeAssistant, config):
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """This is called from the config flow."""
+    _LOGGER.info("Setting up entry {}".format(entry))
     hass.data.setdefault(DOMAIN, {})
 
     config = dict(entry.data)
 
-    if entry.options:
-        config.update(entry.options)
-
     account_id = config[CONFIG_ACCOUNT_ID]
+    api_key = config[CONFIG_MAIN_API_KEY]
+    _LOGGER.info("Setting up entry for account {}".format(account_id))
     hass.data[DOMAIN].setdefault(account_id, {})
-
-    await async_setup_dependencies(hass, config)
-    await hass.config_entries.async_forward_entry_setups(entry, ACCOUNT_PLATFORMS)
+    if config[CONFIG_KIND] == CONFIG_KIND_ACCOUNT:
+        await async_setup_dependencies(hass, config)
+        await hass.config_entries.async_forward_entry_setups(entry, ACCOUNT_PLATFORMS)
     return True
 
 
@@ -50,6 +50,8 @@ async def async_setup_dependencies(hass: HomeAssistant, config):
     account_id = config[CONFIG_ACCOUNT_ID]
     api_key = config[CONFIG_MAIN_API_KEY]
     _LOGGER.info("Setting up dependencies for account {} api_key {}".format(account_id, api_key))
+    coodinator = GECloudCoordinator(hass, config, account_id, api_key)
+    hass.data[DOMAIN][DATA_CLIENT] = coodinator
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
