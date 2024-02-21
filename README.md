@@ -12,7 +12,8 @@ For support please raise a Github ticket.
 
 ## Example dashboard
 
-![image](https://github.com/springfall2008/ge_cloud/assets/48591903/ff59df8b-c8e6-4ce1-a425-d0f11a036d02)
+![image](https://github.com/springfall2008/ge_cloud/assets/48591903/e2047069-9e1f-4f4e-bbe7-e46dcdf04547)
+
 
 ## Install through HACS
 
