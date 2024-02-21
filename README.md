@@ -14,7 +14,7 @@ For support please raise a Github ticket.
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Default-41BDF5.svg?style=for-the-badge)](https://github.com/hacs/integration)
 
-- In HACS, click on Automation
+- In HACS, click on Integration
 - Click on the three dots in the top right corner, choose *Custom Repositories*
 - Add <https://github.com/springfall2008/ge_cloud> as a custom repository of Category 'Integration' and click 'Add'
 - Click *Explore and download repositories* (bottom right), type 'Ge Cloud' in the search box, select the Predbat Repository, then click 'Download' to install the app.
