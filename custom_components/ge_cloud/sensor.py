@@ -41,7 +41,7 @@ SENSORS = (
     CloudEntityDescription(
         key="battery_soc",
         name="Battery SOC",
-        unique_id="battery_soc2",
+        unique_id="battery_soc",
         native_unit_of_measurement="%",
         icon="mdi:battery",
         state_class=SensorStateClass.MEASUREMENT
@@ -49,9 +49,9 @@ SENSORS = (
     CloudEntityDescription(
         key="battery_temperature",
         name="Battery Temperature",
-        unique_id="battery_temperature2",
+        unique_id="battery_temperature",
         native_unit_of_measurement="c",
-        icon="mdi:battery",
+        icon="mdi:thermometer",
         state_class=SensorStateClass.MEASUREMENT
     ),
     CloudEntityDescription(
@@ -59,7 +59,7 @@ SENSORS = (
         name="Battery Power",
         unique_id="battery_power",
         native_unit_of_measurement="w",
-        icon="mdi:battery",
+        icon="mdi:battery-charging-wireless-60",
         state_class=SensorStateClass.MEASUREMENT
     ),
     CloudEntityDescription(
@@ -67,7 +67,7 @@ SENSORS = (
         name="Inverter Temperature",
         unique_id="inverter_temperature",
         native_unit_of_measurement="c",
-        icon="mdi:battery",
+        icon="mdi:thermometer",
         state_class=SensorStateClass.MEASUREMENT
     ),
     CloudEntityDescription(
@@ -75,7 +75,7 @@ SENSORS = (
         name="Inverter Power",
         unique_id="inverter_power",
         native_unit_of_measurement="w",
-        icon="mdi:battery",
+        icon="mdi:generator-portable",
         state_class=SensorStateClass.MEASUREMENT
     ),
     CloudEntityDescription(
@@ -83,7 +83,7 @@ SENSORS = (
         name="Grid Power",
         unique_id="grid_power",
         native_unit_of_measurement="w",
-        icon="mdi:battery",
+        icon="mdi:transmission-tower",
         state_class=SensorStateClass.MEASUREMENT
     ),
     CloudEntityDescription(
@@ -91,7 +91,7 @@ SENSORS = (
         name="Grid Voltage",
         unique_id="grid_voltage",
         native_unit_of_measurement="v",
-        icon="mdi:battery",
+        icon="mdi:transmission-tower",
         state_class=SensorStateClass.MEASUREMENT
     ),
     CloudEntityDescription(
@@ -99,7 +99,7 @@ SENSORS = (
         name="Solar Power",
         unique_id="solar_power",
         native_unit_of_measurement="w",
-        icon="mdi:battery",
+        icon="mdi:solar-power",
         state_class=SensorStateClass.MEASUREMENT
     ),
     CloudEntityDescription(
@@ -107,7 +107,39 @@ SENSORS = (
         name="Consumption Power",
         unique_id="consumption_power",
         native_unit_of_measurement="w",
-        icon="mdi:battery",
+        icon="mdi:home",
+        state_class=SensorStateClass.MEASUREMENT
+    ),
+    CloudEntityDescription(
+        key="solar_today",
+        name="Solar Today",
+        unique_id="solar_today",
+        native_unit_of_measurement="kWh",
+        icon="mdi:solar-panel-large",
+        state_class=SensorStateClass.MEASUREMENT
+    ),
+    CloudEntityDescription(
+        key="grid_import_today",
+        name="Grid Import Today",
+        unique_id="grid_import_today",
+        native_unit_of_measurement="kWh",
+        icon="mdi:transmission-tower-import",
+        state_class=SensorStateClass.MEASUREMENT
+    ),
+    CloudEntityDescription(
+        key="grid_export_today",
+        name="Grid Export Today",
+        unique_id="grid_export_today",
+        native_unit_of_measurement="kWh",
+        icon="mdi:transmission-tower-export",
+        state_class=SensorStateClass.MEASUREMENT
+    ),
+    CloudEntityDescription(
+        key="consumption_today",
+        name="Consumption Today",
+        unique_id="consumption_today",
+        native_unit_of_measurement="kWh",
+        icon="mdi:home",
         state_class=SensorStateClass.MEASUREMENT
     ),
 )
@@ -142,8 +174,8 @@ class CloudSensor(CoordinatorEntity[CloudCoordinator], SensorEntity):
         super().__init__(coordinator)
         self.entity_description = description
 
-        self._attr_name = f"{serial} {description.name}"
-        self._attr_key = f"{serial}_{description.key}"
+        self._attr_name = f"GE Cloud {serial} {description.name}"
+        self._attr_key = f"ge_cloud_{serial}_{description.key}"
         self._attr_state_class = description.state_class
         self._attr_device_class = description.device_class
         self._attr_unique_id = f"{coordinator.account_id}_{serial}_{description.unique_id}"
@@ -162,6 +194,7 @@ class CloudSensor(CoordinatorEntity[CloudCoordinator], SensorEntity):
         key = self.entity_description.key
         value = 0.0
         status = self.coordinator.data.get('status', {})
+        meter = self.coordinator.data.get('meter', {})
         if key == 'battery_soc':
             value = status.get('battery', {}).get('percent', 0.0)
         elif key == 'battery_temperature':
@@ -180,6 +213,14 @@ class CloudSensor(CoordinatorEntity[CloudCoordinator], SensorEntity):
             value = status.get('solar', {}).get('power', 0.0)
         elif key == 'consumption_power':
             value = status.get('consumption', 0.0)
+        elif key == 'solar_today':
+            value = meter.get('today', {}).get('solar', 0.0)
+        elif key == 'grid_import_today':
+            value = meter.get('today', {}).get('grid', 0.0).get('import', 0.0)
+        elif key == 'grid_export_today':
+            value = meter.get('today', {}).get('grid', 0.0).get('export', 0.0)
+        elif key == 'consumption_today':
+            value = meter.get('today', {}).get('consumption', 0.0)
         return value
 
     @property

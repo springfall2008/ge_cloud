@@ -1,4 +1,4 @@
-from .const import (GE_API_INVERTER_STATUS, GE_API_URL, GE_API_DEVICES)
+from .const import (GE_API_INVERTER_STATUS, GE_API_URL, GE_API_DEVICES, GE_API_INVERTER_METER)
 
 import requests
 import json
@@ -9,10 +9,16 @@ _LOGGER = logging.getLogger(__name__)
 
 class GECloudApiClient:
     def __init__(self, account_id, api_key):
+        """
+        Setup client
+        """
         self.account_id = account_id
         self.api_key = api_key
 
     async def async_get_devices(self):
+        """
+        Get list of inverters
+        """
         data = await self.async_get_inverter_data(GE_API_DEVICES)
         serials = []
         if data is not None:
@@ -31,13 +37,29 @@ class GECloudApiClient:
 
         return serials
     async def async_get_inverter_status(self, serial):
+        """
+        Get basis status for inverter
+        """
         data = await self.async_get_inverter_data(GE_API_INVERTER_STATUS, serial)
         if data is not None:
             if 'data' in data:
                 return data['data']
         return None
 
+    async def async_get_inverter_meter(self, serial):
+        """
+        Get meter data for inverter
+        """
+        data = await self.async_get_inverter_data(GE_API_INVERTER_METER, serial)
+        if data is not None:
+            if 'data' in data:
+                return data['data']
+        return None
+
     async def async_get_inverter_data(self, endpoint, serial=""):
+        """
+        Basic API call to GE Cloud
+        """
         url = GE_API_URL + endpoint.format(inverter_serial_number=serial)
         headers = {
             "Authorization": "Bearer " + self.api_key,

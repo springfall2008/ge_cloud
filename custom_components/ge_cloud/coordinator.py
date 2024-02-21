@@ -48,7 +48,9 @@ class CloudCoordinator(DataUpdateCoordinator):
         _LOGGER.info("Coordinator data Update")
         status = await self.api.async_get_inverter_status(self.serial)
         self.data["status"] = status
-        _LOGGER.info("Coordinator data returned status {}".format(status))
+        meter = await self.api.async_get_inverter_meter(self.serial)
+        self.data["meter"] = meter
+        _LOGGER.info("Coordinator data returned status {}, meter {}".format(status, meter))
         return self.data
 
 async def async_setup_cloud_coordinator(hass, account_id: str, serial):

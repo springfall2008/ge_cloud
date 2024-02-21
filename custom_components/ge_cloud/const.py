@@ -23,4 +23,5 @@ DATA_SCHEMA_ACCOUNT = {
 
 GE_API_URL = "https://api.givenergy.cloud/v1/"
 GE_API_INVERTER_STATUS = "inverter/{inverter_serial_number}/system-data/latest"
+GE_API_INVERTER_METER = "inverter/{inverter_serial_number}/meter-data/latest"
 GE_API_DEVICES = "communication-device"
