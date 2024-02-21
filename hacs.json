@@ -1,0 +1,7 @@
+{
+	"name": "GE Cloud",
+	"content_in_root": false,
+    "render_readme": true,
+    "country": "GB",
+	"homeassistant": "2023.7.0"
+}
