@@ -8,15 +8,15 @@ from homeassistant.util.dt import utcnow
 from homeassistant.const import EVENT_HOMEASSISTANT_STOP
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from .api import GECloudApiClient
+from .coordinator import async_setup_cloud_coordinator
 
-from .const import CONFIG_ACCOUNT_ID, CONFIG_MAIN_API_KEY, DOMAIN, DATA_CLIENT, CONFIG_KIND_ACCOUNT, CONFIG_KIND
+from .const import CONFIG_ACCOUNT_ID, CONFIG_MAIN_API_KEY, DOMAIN, DATA_CLIENT, CONFIG_KIND_ACCOUNT, CONFIG_KIND, DATA_ACCOUNT
 
 ACCOUNT_PLATFORMS = [
     "sensor",
 ]
 _LOGGER = logging.getLogger(__name__)
-
-from .coordinator import GECloudCoordinator
 
 async def async_setup(hass: HomeAssistant, config):
     """
@@ -49,9 +49,13 @@ async def async_setup_dependencies(hass: HomeAssistant, config):
     """Setup the coordinator and api client which will be shared by various entities"""
     account_id = config[CONFIG_ACCOUNT_ID]
     api_key = config[CONFIG_MAIN_API_KEY]
-    _LOGGER.info("Setting up dependencies for account {} api_key {}".format(account_id, api_key))
-    coodinator = GECloudCoordinator(hass, config, account_id, api_key)
-    hass.data[DOMAIN][DATA_CLIENT] = coodinator
+
+    _LOGGER.info("Create API Client for account {}".format(account_id))
+    client = GECloudApiClient(account_id, api_key)
+    hass.data[DOMAIN][account_id][DATA_CLIENT] = client
+
+    _LOGGER.info("Create Cloud coordinator for account {}".format(account_id))
+    await async_setup_cloud_coordinator(hass, account_id)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
