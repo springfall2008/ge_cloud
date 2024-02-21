@@ -10,6 +10,10 @@ If all is working then the integration will create some sensors and update them 
 
 For support please raise a Github ticket.
 
+## Example dashboard
+
+![image](https://github.com/springfall2008/ge_cloud/assets/48591903/ff427a50-369c-49d7-bd00-3173bb7f7aa1)
+
 ## Install through HACS
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Default-41BDF5.svg?style=for-the-badge)](https://github.com/hacs/integration)
