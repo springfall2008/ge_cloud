@@ -37,9 +37,9 @@ async def async_validate_main_config(data):
     api_key = data[CONFIG_MAIN_API_KEY]
     _LOGGER.info("Validating main config for account {} api_key {}".format(account_id, api_key))
     api = GECloudApiClient(account_id, api_key)
-    status = await api.async_get_inverter_status()
-    _LOGGER.info("Got status {}".format(status))
-    if status is None:
+    serials = await api.async_get_devices()
+    _LOGGER.info("Got serials {}".format(serials))
+    if serials is None:
         errors[CONFIG_MAIN_API_KEY] = "invalid_api_key"
 
     return errors

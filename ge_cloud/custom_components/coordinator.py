@@ -8,7 +8,7 @@ import voluptuous as vol
 import logging
 from datetime import datetime, timedelta
 
-from .const import(DOMAIN, CONFIG_ACCOUNT_ID, CONFIG_MAIN_API_KEY, DATA_CLIENT, DATA_ACCOUNT, DATA_ACCOUNT_COORDINATOR)
+from .const import(DOMAIN, CONFIG_ACCOUNT_ID, CONFIG_MAIN_API_KEY, DATA_CLIENT, DATA_ACCOUNT, DATA_ACCOUNT_COORDINATOR, DATA_SERIALS)
 from .api import GECloudApiClient
 
 _LOGGER = logging.getLogger(__name__)
@@ -16,7 +16,7 @@ _LOGGER = logging.getLogger(__name__)
 class CloudCoordinator(DataUpdateCoordinator):
     """My custom coordinator."""
 
-    def __init__(self, hass, account_id, api):
+    def __init__(self, hass, account_id, serial, api):
         """Initialize my coordinator."""
         super().__init__(
             hass,
@@ -27,8 +27,9 @@ class CloudCoordinator(DataUpdateCoordinator):
             update_interval=timedelta(seconds=60),
             always_update=True,
         )
-        self.api = api
         self.account_id = account_id
+        self.api = api
+        self.serial = serial
         self.data = {}
         _LOGGER.info("Coordinator class created for account {}".format(account_id))
 
@@ -45,14 +46,14 @@ class CloudCoordinator(DataUpdateCoordinator):
         so entities can quickly look up their data.
         """
         _LOGGER.info("Coordinator data Update")
-        status = await self.api.async_get_inverter_status()
+        status = await self.api.async_get_inverter_status(self.serial)
         self.data["status"] = status
         _LOGGER.info("Coordinator data returned status {}".format(status))
         return self.data
 
-async def async_setup_cloud_coordinator(hass, account_id: str):
+async def async_setup_cloud_coordinator(hass, account_id: str, serial):
 
     _LOGGER.info("Create Cloud coordinator now for account {}".format(account_id))
-    hass.data[DOMAIN][account_id][DATA_ACCOUNT_COORDINATOR] = CloudCoordinator(hass, account_id, hass.data[DOMAIN][account_id][DATA_CLIENT])
-    _LOGGER.info("Create Cloud coordinator created for account {}".format(account_id))
-    await hass.data[DOMAIN][account_id][DATA_ACCOUNT_COORDINATOR].force_update()
+    hass.data[DOMAIN][account_id][DATA_SERIALS][serial][DATA_ACCOUNT_COORDINATOR] = CloudCoordinator(hass, account_id, serial, hass.data[DOMAIN][account_id][DATA_CLIENT])
+    _LOGGER.info("Create Cloud coordinator created for account {} serial".format(account_id, serial))
+    await hass.data[DOMAIN][account_id][DATA_SERIALS][serial][DATA_ACCOUNT_COORDINATOR].force_update()

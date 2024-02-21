@@ -11,7 +11,7 @@ from homeassistant.core import HomeAssistant
 from .api import GECloudApiClient
 from .coordinator import async_setup_cloud_coordinator
 
-from .const import CONFIG_ACCOUNT_ID, CONFIG_MAIN_API_KEY, DOMAIN, DATA_CLIENT, CONFIG_KIND_ACCOUNT, CONFIG_KIND, DATA_ACCOUNT
+from .const import CONFIG_ACCOUNT_ID, CONFIG_MAIN_API_KEY, DOMAIN, DATA_CLIENT, CONFIG_KIND_ACCOUNT, CONFIG_KIND, DATA_ACCOUNT, DATA_SERIALS
 
 ACCOUNT_PLATFORMS = [
     "sensor",
@@ -53,9 +53,13 @@ async def async_setup_dependencies(hass: HomeAssistant, config):
     _LOGGER.info("Create API Client for account {}".format(account_id))
     client = GECloudApiClient(account_id, api_key)
     hass.data[DOMAIN][account_id][DATA_CLIENT] = client
-
-    _LOGGER.info("Create Cloud coordinator for account {}".format(account_id))
-    await async_setup_cloud_coordinator(hass, account_id)
+    serials = await client.async_get_devices()
+    _LOGGER.info("Got serials {}".format(serials))
+    hass.data[DOMAIN][account_id][DATA_SERIALS] = {}
+    for serial in serials:
+        hass.data[DOMAIN][account_id][DATA_SERIALS][serial] = {}
+        _LOGGER.info("Create Cloud coordinator for account {}".format(account_id, serial))
+        await async_setup_cloud_coordinator(hass, account_id, serial)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
