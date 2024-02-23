@@ -2,7 +2,7 @@
 
 This integration connects the GivEnergy cloud service to Home Assistant
 
-* This alpha version only supports inverters and a few basic sensors
+* This alpha version only supports gen 1 registers
 
 Enter the name of your account e.g. home (useful only if you have more than one) and the API key from the GE Cloud Accounts area.
 
@@ -12,7 +12,7 @@ For support please raise a Github ticket.
 
 ## Example dashboard
 
-![image](https://github.com/springfall2008/ge_cloud/assets/48591903/e2047069-9e1f-4f4e-bbe7-e46dcdf04547)
+<img width="1528" alt="image" src="https://github.com/springfall2008/ge_cloud/assets/48591903/25e91b51-c325-4fe9-97e1-3dab6d1b1061">
 
 
 ## Install through HACS
