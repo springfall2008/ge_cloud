@@ -31,7 +31,6 @@ class CloudCoordinator(DataUpdateCoordinator):
         self.api = api
         self.serial = serial
         self.data = {}
-        _LOGGER.info("Coordinator class created for account {}".format(account_id))
 
     async def first_update(self):
         """
@@ -45,16 +44,14 @@ class CloudCoordinator(DataUpdateCoordinator):
         This is the place to pre-process the data to lookup tables
         so entities can quickly look up their data.
         """
-        _LOGGER.info("Coordinator data Update")
         self.data["status"] = await self.api.async_get_inverter_status(self.serial)
         self.data["meter"] = await self.api.async_get_inverter_meter(self.serial)
         self.data['settings'] = await self.api.async_get_inverter_settings(self.serial)
-        _LOGGER.info("Coordinator data returned status {}, meter {} settings {}".format(self.data['status'], self.data['meter'], self.data['settings']))
+        _LOGGER.info("Coordinator data Update")
         return self.data
 
 async def async_setup_cloud_coordinator(hass, account_id: str, serial):
 
-    _LOGGER.info("Create Cloud coordinator now for account {}".format(account_id))
     hass.data[DOMAIN][account_id][DATA_SERIALS][serial][DATA_ACCOUNT_COORDINATOR] = CloudCoordinator(hass, account_id, serial, hass.data[DOMAIN][account_id][DATA_CLIENT])
     _LOGGER.info("Create Cloud coordinator created for account {} serial".format(account_id, serial))
     await hass.data[DOMAIN][account_id][DATA_SERIALS][serial][DATA_ACCOUNT_COORDINATOR].first_update()

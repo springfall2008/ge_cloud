@@ -15,6 +15,8 @@ import asyncio
 import logging
 
 _LOGGER = logging.getLogger(__name__)
+TIMEOUT = 30
+RETRIES = 5
 
 class GECloudApiClient:
     def __init__(self, account_id, api_key):
@@ -30,7 +32,13 @@ class GECloudApiClient:
         Read a setting from the inverter
         """
         if setting_id in GE_API_INVERTER_SETTING_SUPPORTED:
-            data = await self.async_get_inverter_data(GE_API_INVERTER_READ_SETTING, serial, setting_id, post=True)
+            for retry in range(RETRIES):
+                data = await self.async_get_inverter_data(GE_API_INVERTER_READ_SETTING, serial, setting_id, post=True)
+                # -1 is a bad value
+                if data.get('value', -1) == -1:
+                    data = None
+                if data:
+                    break
             _LOGGER.info("Got setting id {} data {}".format(setting_id, data))
             return data
         return None
@@ -40,8 +48,14 @@ class GECloudApiClient:
         Write a setting to the inverter
         """
         if setting_id in GE_API_INVERTER_SETTING_SUPPORTED:
-            data = await self.async_get_inverter_data(GE_API_INVERTER_WRITE_SETTING, serial, setting_id, post=True, datain={"value": str(value), "context" : "homeassistant"})
-            _LOGGER.info("Write setting id {} value {} returns {}".format(setting_id, value, data))
+            for retry in range(RETRIES):
+                data = await self.async_get_inverter_data(GE_API_INVERTER_WRITE_SETTING, serial, setting_id, post=True, datain={"value": str(value), "context" : "homeassistant"})
+                _LOGGER.info("Write setting id {} value {} returns {}".format(setting_id, value, data))
+                if 'success' in data:
+                    if not data['success']:
+                        data = None
+                if data:
+                    break
             return data
         return None
 
@@ -109,19 +123,26 @@ class GECloudApiClient:
         _LOGGER.info("GE Cloud API call url {} data {}".format(url, datain))
         if post:
             if datain:
-                response = await asyncio.to_thread(requests.post, url, headers=headers, json=datain)
+                response = await asyncio.to_thread(requests.post, url, headers=headers, json=datain, timeout=TIMEOUT)
             else:
-                response = await asyncio.to_thread(requests.post, url, headers=headers)
+                response = await asyncio.to_thread(requests.post, url, headers=headers, timeout=TIMEOUT)
         else:
-            response = await asyncio.to_thread(requests.get, url, headers=headers)
+            response = await asyncio.to_thread(requests.get, url, headers=headers, timeout=TIMEOUT)
         try:
             data = response.json()
         except requests.exceptions.JSONDecodeError:
-            data = None
             _LOGGER.error("Failed to decode response from {}".format(url))
-        _LOGGER.info("Got response from {} data {}".format(url, data))
+            data = None
+        except requests.Timeout:
+            _LOGGER.error("Timeout from {}".format(url))
+            data = None
+
+        # Check data
         if data and 'data' in data:
             data = data['data']
         else:
             data = None
-        return data
+        if response.status_code in [200, 201]:
+            return data
+        _LOGGER.error("Failed to get data from {} code {}".format(url, response.status_code))
+        return None

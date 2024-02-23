@@ -16,7 +16,8 @@ from .const import CONFIG_ACCOUNT_ID, CONFIG_MAIN_API_KEY, DOMAIN, DATA_CLIENT, 
 ACCOUNT_PLATFORMS = [
     "sensor",
     "number",
-    "switch"
+    "switch",
+    "select"
 ]
 _LOGGER = logging.getLogger(__name__)
 

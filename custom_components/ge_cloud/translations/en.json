@@ -1,0 +1,20 @@
+{
+    "title": "GE Cloud",
+    "config": {
+        "step": {
+            "account": {
+                "title": "Account Information",
+                "description": "Setup your basic account information.",
+                "data": {
+                    "account_id": "Your account ID",
+                    "api_key": "Your Api key",
+                    "other": "Other"
+                },
+                "data_description": {
+                    "account_id": "Any identifier for your account (in case you have more than one)",
+                    "api_key": "This can be found in the GE Cloud portal under API Key"
+                }
+            }
+        }
+    }
+}
