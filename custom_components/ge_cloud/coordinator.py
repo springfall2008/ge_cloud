@@ -24,7 +24,7 @@ class CloudCoordinator(DataUpdateCoordinator):
             # Name of the data. For logging purposes.
             name="GE Cloud Update",
             # Polling interval. Will only be polled if there are subscribers.
-            update_interval=timedelta(seconds=60),
+            update_interval=timedelta(seconds=60*5),
             always_update=True,
         )
         self.account_id = account_id
@@ -33,7 +33,7 @@ class CloudCoordinator(DataUpdateCoordinator):
         self.data = {}
         _LOGGER.info("Coordinator class created for account {}".format(account_id))
 
-    async def force_update(self):
+    async def first_update(self):
         """
         Force update of data
         """
@@ -46,11 +46,10 @@ class CloudCoordinator(DataUpdateCoordinator):
         so entities can quickly look up their data.
         """
         _LOGGER.info("Coordinator data Update")
-        status = await self.api.async_get_inverter_status(self.serial)
-        self.data["status"] = status
-        meter = await self.api.async_get_inverter_meter(self.serial)
-        self.data["meter"] = meter
-        _LOGGER.info("Coordinator data returned status {}, meter {}".format(status, meter))
+        self.data["status"] = await self.api.async_get_inverter_status(self.serial)
+        self.data["meter"] = await self.api.async_get_inverter_meter(self.serial)
+        self.data['settings'] = await self.api.async_get_inverter_settings(self.serial)
+        _LOGGER.info("Coordinator data returned status {}, meter {} settings {}".format(self.data['status'], self.data['meter'], self.data['settings']))
         return self.data
 
 async def async_setup_cloud_coordinator(hass, account_id: str, serial):
@@ -58,4 +57,4 @@ async def async_setup_cloud_coordinator(hass, account_id: str, serial):
     _LOGGER.info("Create Cloud coordinator now for account {}".format(account_id))
     hass.data[DOMAIN][account_id][DATA_SERIALS][serial][DATA_ACCOUNT_COORDINATOR] = CloudCoordinator(hass, account_id, serial, hass.data[DOMAIN][account_id][DATA_CLIENT])
     _LOGGER.info("Create Cloud coordinator created for account {} serial".format(account_id, serial))
-    await hass.data[DOMAIN][account_id][DATA_SERIALS][serial][DATA_ACCOUNT_COORDINATOR].force_update()
+    await hass.data[DOMAIN][account_id][DATA_SERIALS][serial][DATA_ACCOUNT_COORDINATOR].first_update()

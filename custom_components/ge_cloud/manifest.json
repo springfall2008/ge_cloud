@@ -13,7 +13,9 @@
   "issue_tracker": "https://github.com/springfall2008/ge_cloud/issues",
   "homekit": {},
   "iot_class": "cloud_polling",
-  "requirements": [],
+  "requirements": [
+    "pymodbus==3.5.4"
+  ],
   "ssdp": [],
   "version": "0.1.1",
   "zeroconf": []

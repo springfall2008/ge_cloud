@@ -11,7 +11,7 @@
                     "other": "Other"
                 },
                 "data_description": {
-                    "account_id": "This is the serial number of your GE inverter",
+                    "account_id": "Any identifier for your account (in case you have more than one)",
                     "api_key": "This can be found in the GE Cloud portal under API Key"
                 }
             }
