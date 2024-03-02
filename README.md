@@ -2,7 +2,7 @@
 
 This integration connects the GivEnergy cloud service to Home Assistant
 
-* This alpha version only supports gen 1 registers
+* This alpha version only supports Inverter gen 1 registers and smart switches (just power data & local key)
 
 Enter the name of your account e.g. home (useful only if you have more than one) and the API key from the GE Cloud Accounts area.
 
