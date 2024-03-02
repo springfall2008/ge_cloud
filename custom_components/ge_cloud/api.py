@@ -6,7 +6,10 @@ from .const import (
     GE_API_INVERTER_SETTINGS,
     GE_API_INVERTER_READ_SETTING,
     GE_API_INVERTER_WRITE_SETTING,
-    GE_API_INVERTER_SETTING_SUPPORTED
+    GE_API_INVERTER_SETTING_SUPPORTED,
+    GE_API_SMART_DEVICES,
+    GE_API_SMART_DEVICE,
+    GE_API_SMART_DEVICE_DATA
 )
 
 import requests
@@ -79,6 +82,50 @@ class GECloudApiClient:
                         results[sid] = {'name': name, 'value': value, 'validation_rules': validation_rules}
         return results
 
+    async def async_get_smart_device_data(self, uuid):
+        """
+        Get smart device data points
+        """
+        data = await self.async_get_inverter_data(GE_API_SMART_DEVICE_DATA, uuid=uuid)
+        for point in data:
+            _LOGGER.info("Smart device point {}".format(point))
+            return point
+        return {}
+
+    async def async_get_smart_device(self, uuid):
+        """
+        Get smart device
+        """
+        device = await self.async_get_inverter_data(GE_API_SMART_DEVICE, uuid=uuid)
+        _LOGGER.info("Device {}".format(device))
+        if device:
+            uuid = device.get('uuid', None)
+            other_data = device.get('other_data', {})
+            alias = device.get('alias', None)
+            local_key = other_data.get('local_key', None)
+            asset_id = other_data.get('asset_id', None)
+            _LOGGER.info("Got smart device uuid {} alias {} local_key {}".format(uuid, alias, local_key))
+            return {'uuid': uuid, 'alias': alias, 'local_key': local_key, 'asset_id': asset_id}
+        return {}
+
+    async def async_get_smart_devices(self):
+        """
+        Get list of smart devices
+        """
+        device_list = await self.async_get_inverter_data(GE_API_SMART_DEVICES)
+        devices = []
+        if device_list is not None:
+            _LOGGER.info("Got smart device list {}".format(device_list))
+            for device in device_list:
+                _LOGGER.info("Device {}".format(device))
+                uuid = device.get('uuid', None)
+                other_data = device.get('other_data', {})
+                alias = device.get('alias', None)
+                local_key = other_data.get('local_key', None)
+                _LOGGER.info("Got smart device uuid {} alias {} local_key {}".format(uuid, alias, local_key))
+                devices.append({'uuid': uuid, 'alias': alias, 'local_key': local_key})
+        return devices
+
     async def async_get_devices(self):
         """
         Get list of inverters
@@ -110,11 +157,11 @@ class GECloudApiClient:
         """
         return await self.async_get_inverter_data(GE_API_INVERTER_METER, serial)
 
-    async def async_get_inverter_data(self, endpoint, serial="", setting_id="", post=False, datain=None):
+    async def async_get_inverter_data(self, endpoint, serial="", setting_id="", post=False, datain=None, uuid=""):
         """
         Basic API call to GE Cloud
         """
-        url = GE_API_URL + endpoint.format(inverter_serial_number=serial, setting_id=setting_id)
+        url = GE_API_URL + endpoint.format(inverter_serial_number=serial, setting_id=setting_id, uuid=uuid)
         headers = {
             "Authorization": "Bearer " + self.api_key,
             "Content-Type": "application/json",

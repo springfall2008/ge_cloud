@@ -37,7 +37,7 @@ class CloudEntityDescription(SensorEntityDescription):
     unique_id: str | None = None
 
 _LOGGER = logging.getLogger(__name__)
-SENSORS = (
+SENSORS_INVERTER = (
     CloudEntityDescription(
         key="battery_soc",
         name="Battery SOC",
@@ -141,6 +141,16 @@ SENSORS = (
         native_unit_of_measurement="kWh",
         icon="mdi:home",
         state_class=SensorStateClass.MEASUREMENT
+    )
+)
+SENSORS_SMART_DEVICE = (
+    CloudEntityDescription(
+        key="power",
+        name="Power",
+        unique_id="power",
+        native_unit_of_measurement="w",
+        icon="mdi:information",
+        state_class=SensorStateClass.MEASUREMENT
     ),
 )
 
@@ -158,10 +168,13 @@ async def async_setup_default_sensors(hass: HomeAssistant, config, serial, async
     """
     Setup default sensors
     """
-    sensors = SENSORS
     account_id = config[CONFIG_ACCOUNT_ID]
     coordinator = hass.data[DOMAIN][account_id][DATA_SERIALS][serial][DATA_ACCOUNT_COORDINATOR]
-    _LOGGER.info(f"Setting up default sensors for account {account_id}")
+    if coordinator.type == "smart_device":
+        sensors = SENSORS_SMART_DEVICE
+    else:
+        sensors = SENSORS_INVERTER
+    _LOGGER.info(f"Setting up default sensors for account {account_id} type {coordinator.type} serial {serial}")
     async_add_entities(
         CloudSensor(coordinator, description, serial) for description in sensors
     )
@@ -173,9 +186,14 @@ class CloudSensor(CoordinatorEntity[CloudCoordinator], SensorEntity):
     def __init__(self, coordinator, description, serial) -> None:
         super().__init__(coordinator)
         self.entity_description = description
+        device_name = coordinator.device_name
 
-        self._attr_name = f"GE Cloud {serial} {description.name}"
-        self._attr_key = f"ge_cloud_{serial}_{description.key}"
+        if coordinator.type == "smart_device":
+            self._attr_key = f"ge_smart_{serial}_{description.key}"
+            self._attr_name = f"GE Smart {device_name} {description.name}"
+        else:
+            self._attr_key = f"ge_inverter_{serial}_{description.key}"
+            self._attr_name = f"GE Inverter {device_name} {description.name}"
         self._attr_state_class = description.state_class
         self._attr_device_class = description.device_class
         self._attr_unique_id = f"{coordinator.account_id}_{serial}_{description.unique_id}"
@@ -187,40 +205,57 @@ class CloudSensor(CoordinatorEntity[CloudCoordinator], SensorEntity):
         return True
 
     @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        if self.coordinator.type == "smart_device":
+            smart_device = self.coordinator.data.get('smart_device', {})
+            return {"local_key" : smart_device.get('local_key'),
+                    "uuid" : smart_device.get('uuid'),
+                    "asset_id" : smart_device.get('asset_id')
+                    }
+        return None
+
+    @property
     def native_value(self) -> float | datetime | None:
         if not self.entity_description.key:
             return self.entity_description.name
 
         key = self.entity_description.key
         value = 0.0
-        status = self.coordinator.data.get('status', {})
-        meter = self.coordinator.data.get('meter', {})
-        if key == 'battery_soc':
-            value = status.get('battery', {}).get('percent', 0.0)
-        elif key == 'battery_temperature':
-            value = status.get('battery', {}).get('temperature', 0.0)
-        elif key == 'battery_power':
-            value = status.get('battery', {}).get('power', 0.0)
-        elif key == 'inverter_temperature':
-            value = status.get('inverter', {}).get('temperature', 0.0)
-        elif key == 'inverter_power':
-            value = status.get('inverter', {}).get('power', 0.0)
-        elif key == 'grid_voltage':
-            value = status.get('grid', {}).get('voltage', 0.0)
-        elif key == 'grid_power':
-            value = status.get('grid', {}).get('power', 0.0)
-        elif key == 'solar_power':
-            value = status.get('solar', {}).get('power', 0.0)
-        elif key == 'consumption_power':
-            value = status.get('consumption', 0.0)
-        elif key == 'solar_today':
-            value = meter.get('today', {}).get('solar', 0.0)
-        elif key == 'grid_import_today':
-            value = meter.get('today', {}).get('grid', 0.0).get('import', 0.0)
-        elif key == 'grid_export_today':
-            value = meter.get('today', {}).get('grid', 0.0).get('export', 0.0)
-        elif key == 'consumption_today':
-            value = meter.get('today', {}).get('consumption', 0.0)
+
+        if self.coordinator.type == "smart_device":
+            smart_device = self.coordinator.data.get('smart_device', {})
+            smart_point = self.coordinator.data.get('point', {})
+            if key == 'power':
+                value = smart_point.get('power', 0)
+        else:
+            status = self.coordinator.data.get('status', {})
+            meter = self.coordinator.data.get('meter', {})
+            if key == 'battery_soc':
+                value = status.get('battery', {}).get('percent', 0.0)
+            elif key == 'battery_temperature':
+                value = status.get('battery', {}).get('temperature', 0.0)
+            elif key == 'battery_power':
+                value = status.get('battery', {}).get('power', 0.0)
+            elif key == 'inverter_temperature':
+                value = status.get('inverter', {}).get('temperature', 0.0)
+            elif key == 'inverter_power':
+                value = status.get('inverter', {}).get('power', 0.0)
+            elif key == 'grid_voltage':
+                value = status.get('grid', {}).get('voltage', 0.0)
+            elif key == 'grid_power':
+                value = status.get('grid', {}).get('power', 0.0)
+            elif key == 'solar_power':
+                value = status.get('solar', {}).get('power', 0.0)
+            elif key == 'consumption_power':
+                value = status.get('consumption', 0.0)
+            elif key == 'solar_today':
+                value = meter.get('today', {}).get('solar', 0.0)
+            elif key == 'grid_import_today':
+                value = meter.get('today', {}).get('grid', 0.0).get('import', 0.0)
+            elif key == 'grid_export_today':
+                value = meter.get('today', {}).get('grid', 0.0).get('export', 0.0)
+            elif key == 'consumption_today':
+                value = meter.get('today', {}).get('consumption', 0.0)
         return value
 
     @property

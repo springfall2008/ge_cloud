@@ -57,41 +57,44 @@ async def async_setup_default_numbers(hass: HomeAssistant, config, serial, async
     account_id = config[CONFIG_ACCOUNT_ID]
     coordinator = hass.data[DOMAIN][account_id][DATA_SERIALS][serial][DATA_ACCOUNT_COORDINATOR]
     _LOGGER.info(f"Setting up default numbers for account {account_id}")
-    for reg_id in coordinator.data['settings'].keys():
-        reg_name = coordinator.data['settings'][reg_id]['name']
-        ha_name = reg_name.lower().replace(' ', '_').replace('%', 'percent')
-        value = coordinator.data['settings'][reg_id]['value']
-        validation_rules = coordinator.data['settings'][reg_id]['validation_rules']
-        cloud_numbers = []
-        device_class = None
-        native_unit_of_measurement = ""
-        if '%' in reg_name:
-            device_class = NumberDeviceClass.BATTERY
-            native_unit_of_measurement = "%"
-        elif '_power_percent' in ha_name:
-            device_class = NumberDeviceClass.POWER
-            native_unit_of_measurement = "%"
-        elif '_power' in ha_name:
-            device_class = NumberDeviceClass.POWER
-            native_unit_of_measurement = "w"
-        is_number = False
-        for validation_rule in validation_rules:
-            if validation_rule.startswith('between:'):
-                is_number = True
-                range_min, range_max = validation_rule.split(':')[1].split(',')
-        if is_number:
-            _LOGGER.info(f"Setting up number {reg_id} ha_name {ha_name} reg_name {reg_name} value {value}")
-            description = CloudNumberEntityDescription(
-                key=ha_name,
-                name=reg_name,
-                unique_id=ha_name,
-                native_unit_of_measurement=native_unit_of_measurement,
-                reg_number = reg_id,
-                device_class=device_class,
-                native_min_value=float(range_min),
-                native_max_value=float(range_max)
-            )
-            cloud_numbers.append(CloudNumber(coordinator, description, serial))
+
+    cloud_numbers = []
+    if coordinator.type == "inverter":
+        for reg_id in coordinator.data['settings'].keys():
+            reg_name = coordinator.data['settings'][reg_id]['name']
+            ha_name = reg_name.lower().replace(' ', '_').replace('%', 'percent')
+            value = coordinator.data['settings'][reg_id]['value']
+            validation_rules = coordinator.data['settings'][reg_id]['validation_rules']
+            device_class = None
+            native_unit_of_measurement = ""
+            if '%' in reg_name:
+                device_class = NumberDeviceClass.BATTERY
+                native_unit_of_measurement = "%"
+            elif '_power_percent' in ha_name:
+                device_class = NumberDeviceClass.POWER
+                native_unit_of_measurement = "%"
+            elif '_power' in ha_name:
+                device_class = NumberDeviceClass.POWER
+                native_unit_of_measurement = "w"
+            is_number = False
+            for validation_rule in validation_rules:
+                if validation_rule.startswith('between:'):
+                    is_number = True
+                    range_min, range_max = validation_rule.split(':')[1].split(',')
+            if is_number:
+                _LOGGER.info(f"Setting up number {reg_id} ha_name {ha_name} reg_name {reg_name} value {value}")
+                description = CloudNumberEntityDescription(
+                    key=ha_name,
+                    name=reg_name,
+                    unique_id=ha_name,
+                    native_unit_of_measurement=native_unit_of_measurement,
+                    reg_number = reg_id,
+                    device_class=device_class,
+                    native_min_value=float(range_min),
+                    native_max_value=float(range_max)
+                )
+                cloud_numbers.append(CloudNumber(coordinator, description, serial))
+    if cloud_numbers:
         async_add_entities(cloud_numbers)
 
 class CloudNumber(CoordinatorEntity[CloudCoordinator], NumberEntity):
@@ -102,8 +105,8 @@ class CloudNumber(CoordinatorEntity[CloudCoordinator], NumberEntity):
         super().__init__(coordinator)
         self.entity_description = description
 
-        self._attr_name = f"GE Cloud {serial} {description.name}"
-        self._attr_key = f"ge_cloud_{serial}_{description.key}"
+        self._attr_name = f"GE Inverter {serial} {description.name}"
+        self._attr_key = f"ge_inverter_{serial}_{description.key}"
         self._attr_device_class = description.device_class
         self._attr_unique_id = f"{coordinator.account_id}_{serial}_{description.unique_id}"
         self._attr_icon = description.icon

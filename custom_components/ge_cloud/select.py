@@ -59,28 +59,30 @@ async def async_setup_default_selects(hass: HomeAssistant, config, serial, async
     account_id = config[CONFIG_ACCOUNT_ID]
     coordinator = hass.data[DOMAIN][account_id][DATA_SERIALS][serial][DATA_ACCOUNT_COORDINATOR]
     _LOGGER.info(f"Setting up default selects for account {account_id}")
-    for reg_id in coordinator.data['settings'].keys():
-        reg_name = coordinator.data['settings'][reg_id]['name']
-        ha_name = reg_name.lower().replace(' ', '_').replace('%', 'percent')
-        value = coordinator.data['settings'][reg_id]['value']
-        validation_rules = coordinator.data['settings'][reg_id]['validation_rules']
-        cloud_selects = []
-        device_class = None
-        native_unit_of_measurement = ""
-        is_select = False
-        for validation_rule in validation_rules:
-            if validation_rule.startswith('date_format:H:i'):
-                is_select = True
-        if is_select:
-            _LOGGER.info(f"Setting up Select {reg_id} ha_name {ha_name} reg_name {reg_name} value {value}")
-            description = CloudSelectEntityDescription(
-                key=ha_name,
-                name=reg_name,
-                unique_id=ha_name,
-                reg_number = reg_id,
-                device_class=device_class,
-            )
-            cloud_selects.append(CloudSelect(coordinator, description, serial))
+    cloud_selects = []
+    if coordinator.type == "inverter":
+        for reg_id in coordinator.data['settings'].keys():
+            reg_name = coordinator.data['settings'][reg_id]['name']
+            ha_name = reg_name.lower().replace(' ', '_').replace('%', 'percent')
+            value = coordinator.data['settings'][reg_id]['value']
+            validation_rules = coordinator.data['settings'][reg_id]['validation_rules']
+            device_class = None
+            native_unit_of_measurement = ""
+            is_select = False
+            for validation_rule in validation_rules:
+                if validation_rule.startswith('date_format:H:i'):
+                    is_select = True
+            if is_select:
+                _LOGGER.info(f"Setting up Select {reg_id} ha_name {ha_name} reg_name {reg_name} value {value}")
+                description = CloudSelectEntityDescription(
+                    key=ha_name,
+                    name=reg_name,
+                    unique_id=ha_name,
+                    reg_number = reg_id,
+                    device_class=device_class,
+                )
+                cloud_selects.append(CloudSelect(coordinator, description, serial))
+    if cloud_selects:
         async_add_entities(cloud_selects)
 
 class CloudSelect(CoordinatorEntity[CloudCoordinator], SelectEntity):
@@ -94,8 +96,8 @@ class CloudSelect(CoordinatorEntity[CloudCoordinator], SelectEntity):
         super().__init__(coordinator)
         self.entity_description = description
 
-        self._attr_name = f"GE Cloud {serial} {description.name}"
-        self._attr_key = f"ge_cloud_{serial}_{description.key}"
+        self._attr_name = f"GE Inverter {serial} {description.name}"
+        self._attr_key = f"ge_inverter_{serial}_{description.key}"
         self._attr_device_class = description.device_class
         self._attr_unique_id = f"{coordinator.account_id}_{serial}_{description.unique_id}"
         self._attr_icon = description.icon
