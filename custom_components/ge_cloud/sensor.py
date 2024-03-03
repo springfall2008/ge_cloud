@@ -210,7 +210,8 @@ class CloudSensor(CoordinatorEntity[CloudCoordinator], SensorEntity):
             smart_device = self.coordinator.data.get('smart_device', {})
             return {"local_key" : smart_device.get('local_key'),
                     "uuid" : smart_device.get('uuid'),
-                    "asset_id" : smart_device.get('asset_id')
+                    "asset_id" : smart_device.get('asset_id'),
+                    "device_id" : smart_device.get('hardware_id'),
                     }
         return None
 

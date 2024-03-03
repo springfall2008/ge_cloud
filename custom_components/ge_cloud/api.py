@@ -104,8 +104,9 @@ class GECloudApiClient:
             alias = device.get('alias', None)
             local_key = other_data.get('local_key', None)
             asset_id = other_data.get('asset_id', None)
-            _LOGGER.info("Got smart device uuid {} alias {} local_key {}".format(uuid, alias, local_key))
-            return {'uuid': uuid, 'alias': alias, 'local_key': local_key, 'asset_id': asset_id}
+            hardware_id = other_data.get('hardware_id', None)
+            _LOGGER.info("Got smart device uuid {} alias {} local_key {} asset_id {} hardware_id {}".format(uuid, alias, local_key, asset_id, hardware_id))
+            return {'uuid': uuid, 'alias': alias, 'local_key': local_key, 'asset_id': asset_id, 'hardware_id': hardware_id}
         return {}
 
     async def async_get_smart_devices(self):
