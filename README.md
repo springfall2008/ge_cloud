@@ -10,10 +10,12 @@ If all is working then the integration will create some sensors and update them 
 
 For support please raise a Github ticket.
 
+If you want to buy me a beer then please use Paypal - [tdlj@tdlj.net](mailto:tdlj@tdlj.net)
+![image](https://github.com/springfall2008/batpred/assets/48591903/b3a533ef-0862-4e0b-b272-30e254f58467)
+
 ## Example dashboard
 
 <img width="1528" alt="image" src="https://github.com/springfall2008/ge_cloud/assets/48591903/25e91b51-c325-4fe9-97e1-3dab6d1b1061">
-
 
 ## Install through HACS
 
