@@ -35,7 +35,9 @@ async def async_validate_main_config(data):
 
     account_id = data[CONFIG_ACCOUNT_ID]
     api_key = data[CONFIG_MAIN_API_KEY]
-    _LOGGER.info("Validating main config for account {} api_key {}".format(account_id, api_key))
+    _LOGGER.info(
+        "Validating main config for account {} api_key {}".format(account_id, api_key)
+    )
     api = GECloudApiClient(account_id, api_key)
     serials = await api.async_get_devices()
     _LOGGER.info("Got serials {}".format(serials))
@@ -59,13 +61,17 @@ class GECloudConfigFlow(ConfigFlow, domain=DOMAIN):
         if len(errors) < 1:
             user_input[CONFIG_KIND] = CONFIG_KIND_ACCOUNT
             return self.async_create_entry(
-                title="GE Cloud", data=user_input
+                title=user_input[CONFIG_ACCOUNT_ID], data=user_input
             )
 
         return self.async_show_form(
-            step_id="account", data_schema=vol.Schema(DATA_SCHEMA_ACCOUNT), errors=errors
+            step_id="account",
+            data_schema=vol.Schema(DATA_SCHEMA_ACCOUNT),
+            errors=errors,
         )
 
     # The schema of the config flow
     async def async_step_user(self, user_input=None):
-        return self.async_show_form(step_id="account", data_schema=vol.Schema(DATA_SCHEMA_ACCOUNT))
+        return self.async_show_form(
+            step_id="account", data_schema=vol.Schema(DATA_SCHEMA_ACCOUNT)
+        )

@@ -9,7 +9,7 @@ from .const import (
     GE_API_INVERTER_SETTING_SUPPORTED,
     GE_API_SMART_DEVICES,
     GE_API_SMART_DEVICE,
-    GE_API_SMART_DEVICE_DATA
+    GE_API_SMART_DEVICE_DATA,
 )
 
 import requests
@@ -21,6 +21,7 @@ _LOGGER = logging.getLogger(__name__)
 TIMEOUT = 30
 RETRIES = 5
 
+
 class GECloudApiClient:
     def __init__(self, account_id, api_key):
         """
@@ -28,7 +29,7 @@ class GECloudApiClient:
         """
         self.account_id = account_id
         self.api_key = api_key
-        self.register_list = None
+        self.register_list = {}
 
     async def async_read_inverter_setting(self, serial, setting_id):
         """
@@ -36,9 +37,11 @@ class GECloudApiClient:
         """
         if setting_id in GE_API_INVERTER_SETTING_SUPPORTED:
             for retry in range(RETRIES):
-                data = await self.async_get_inverter_data(GE_API_INVERTER_READ_SETTING, serial, setting_id, post=True)
+                data = await self.async_get_inverter_data(
+                    GE_API_INVERTER_READ_SETTING, serial, setting_id, post=True
+                )
                 # -1 is a bad value
-                if data.get('value', -1) == -1:
+                if data.get("value", -1) == -1:
                     data = None
                 if data:
                     break
@@ -52,10 +55,20 @@ class GECloudApiClient:
         """
         if setting_id in GE_API_INVERTER_SETTING_SUPPORTED:
             for retry in range(RETRIES):
-                data = await self.async_get_inverter_data(GE_API_INVERTER_WRITE_SETTING, serial, setting_id, post=True, datain={"value": str(value), "context" : "homeassistant"})
-                _LOGGER.info("Write setting id {} value {} returns {}".format(setting_id, value, data))
-                if 'success' in data:
-                    if not data['success']:
+                data = await self.async_get_inverter_data(
+                    GE_API_INVERTER_WRITE_SETTING,
+                    serial,
+                    setting_id,
+                    post=True,
+                    datain={"value": str(value), "context": "homeassistant"},
+                )
+                _LOGGER.info(
+                    "Write setting id {} value {} returns {}".format(
+                        setting_id, value, data
+                    )
+                )
+                if "success" in data:
+                    if not data["success"]:
                         data = None
                 if data:
                     break
@@ -66,20 +79,35 @@ class GECloudApiClient:
         """
         Get settings for account
         """
-        if not self.register_list:
-            self.register_list = await self.async_get_inverter_data(GE_API_INVERTER_SETTINGS, serial)
+        if serial not in self.register_list:
+            self.register_list[serial] = await self.async_get_inverter_data(
+                GE_API_INVERTER_SETTINGS, serial
+            )
+            _LOGGER.info(
+                "Register list for serial {} is {}".format(
+                    serial, self.register_list[serial]
+                )
+            )
         results = {}
-        if self.register_list:
-            for setting in self.register_list:
-                sid = setting.get('id', None)
-                name = setting.get('name', None)
-                validation_rules = setting.get('validation_rules', None)
+        if serial in self.register_list:
+            for setting in self.register_list[serial]:
+                sid = setting.get("id", None)
+                name = setting.get("name", None)
+                validation_rules = setting.get("validation_rules", None)
                 if sid and name:
                     data = await self.async_read_inverter_setting(serial, sid)
-                    if data and 'value' in data:
-                        value = data['value']
-                        _LOGGER.info("Setting id {} data {} name {} value {}".format(sid, data, name, value))
-                        results[sid] = {'name': name, 'value': value, 'validation_rules': validation_rules}
+                    if data and "value" in data:
+                        value = data["value"]
+                        _LOGGER.info(
+                            "Setting id {} data {} name {} value {}".format(
+                                sid, data, name, value
+                            )
+                        )
+                        results[sid] = {
+                            "name": name,
+                            "value": value,
+                            "validation_rules": validation_rules,
+                        }
         return results
 
     async def async_get_smart_device_data(self, uuid):
@@ -99,14 +127,24 @@ class GECloudApiClient:
         device = await self.async_get_inverter_data(GE_API_SMART_DEVICE, uuid=uuid)
         _LOGGER.info("Device {}".format(device))
         if device:
-            uuid = device.get('uuid', None)
-            other_data = device.get('other_data', {})
-            alias = device.get('alias', None)
-            local_key = other_data.get('local_key', None)
-            asset_id = other_data.get('asset_id', None)
-            hardware_id = other_data.get('hardware_id', None)
-            _LOGGER.info("Got smart device uuid {} alias {} local_key {} asset_id {} hardware_id {}".format(uuid, alias, local_key, asset_id, hardware_id))
-            return {'uuid': uuid, 'alias': alias, 'local_key': local_key, 'asset_id': asset_id, 'hardware_id': hardware_id}
+            uuid = device.get("uuid", None)
+            other_data = device.get("other_data", {})
+            alias = device.get("alias", None)
+            local_key = other_data.get("local_key", None)
+            asset_id = other_data.get("asset_id", None)
+            hardware_id = other_data.get("hardware_id", None)
+            _LOGGER.info(
+                "Got smart device uuid {} alias {} local_key {} asset_id {} hardware_id {}".format(
+                    uuid, alias, local_key, asset_id, hardware_id
+                )
+            )
+            return {
+                "uuid": uuid,
+                "alias": alias,
+                "local_key": local_key,
+                "asset_id": asset_id,
+                "hardware_id": hardware_id,
+            }
         return {}
 
     async def async_get_smart_devices(self):
@@ -119,12 +157,16 @@ class GECloudApiClient:
             _LOGGER.info("Got smart device list {}".format(device_list))
             for device in device_list:
                 _LOGGER.info("Device {}".format(device))
-                uuid = device.get('uuid', None)
-                other_data = device.get('other_data', {})
-                alias = device.get('alias', None)
-                local_key = other_data.get('local_key', None)
-                _LOGGER.info("Got smart device uuid {} alias {} local_key {}".format(uuid, alias, local_key))
-                devices.append({'uuid': uuid, 'alias': alias, 'local_key': local_key})
+                uuid = device.get("uuid", None)
+                other_data = device.get("other_data", {})
+                alias = device.get("alias", None)
+                local_key = other_data.get("local_key", None)
+                _LOGGER.info(
+                    "Got smart device uuid {} alias {} local_key {}".format(
+                        uuid, alias, local_key
+                    )
+                )
+                devices.append({"uuid": uuid, "alias": alias, "local_key": local_key})
         return devices
 
     async def async_get_devices(self):
@@ -137,15 +179,16 @@ class GECloudApiClient:
             _LOGGER.info("Got device list {}".format(device_list))
             for device in device_list:
                 _LOGGER.info("Device {}".format(device))
-                inverter = device.get('inverter', None)
+                inverter = device.get("inverter", None)
                 if inverter:
                     _LOGGER.info("Got inverter {}".format(inverter))
-                    serial = inverter.get('serial', None)
+                    serial = inverter.get("serial", None)
                     if serial:
                         _LOGGER.info("Got serial {}".format(serial))
                         serials.append(serial)
 
         return serials
+
     async def async_get_inverter_status(self, serial):
         """
         Get basis status for inverter
@@ -158,24 +201,34 @@ class GECloudApiClient:
         """
         return await self.async_get_inverter_data(GE_API_INVERTER_METER, serial)
 
-    async def async_get_inverter_data(self, endpoint, serial="", setting_id="", post=False, datain=None, uuid=""):
+    async def async_get_inverter_data(
+        self, endpoint, serial="", setting_id="", post=False, datain=None, uuid=""
+    ):
         """
         Basic API call to GE Cloud
         """
-        url = GE_API_URL + endpoint.format(inverter_serial_number=serial, setting_id=setting_id, uuid=uuid)
+        url = GE_API_URL + endpoint.format(
+            inverter_serial_number=serial, setting_id=setting_id, uuid=uuid
+        )
         headers = {
             "Authorization": "Bearer " + self.api_key,
             "Content-Type": "application/json",
-            "Accept": "application/json"
+            "Accept": "application/json",
         }
         _LOGGER.info("GE Cloud API call url {} data {}".format(url, datain))
         if post:
             if datain:
-                response = await asyncio.to_thread(requests.post, url, headers=headers, json=datain, timeout=TIMEOUT)
+                response = await asyncio.to_thread(
+                    requests.post, url, headers=headers, json=datain, timeout=TIMEOUT
+                )
             else:
-                response = await asyncio.to_thread(requests.post, url, headers=headers, timeout=TIMEOUT)
+                response = await asyncio.to_thread(
+                    requests.post, url, headers=headers, timeout=TIMEOUT
+                )
         else:
-            response = await asyncio.to_thread(requests.get, url, headers=headers, timeout=TIMEOUT)
+            response = await asyncio.to_thread(
+                requests.get, url, headers=headers, timeout=TIMEOUT
+            )
         try:
             data = response.json()
         except requests.exceptions.JSONDecodeError:
@@ -186,11 +239,13 @@ class GECloudApiClient:
             data = None
 
         # Check data
-        if data and 'data' in data:
-            data = data['data']
+        if data and "data" in data:
+            data = data["data"]
         else:
             data = None
         if response.status_code in [200, 201]:
             return data
-        _LOGGER.error("Failed to get data from {} code {}".format(url, response.status_code))
+        _LOGGER.error(
+            "Failed to get data from {} code {}".format(url, response.status_code)
+        )
         return None
