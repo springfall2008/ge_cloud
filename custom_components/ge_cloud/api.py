@@ -6,10 +6,10 @@ from .const import (
     GE_API_INVERTER_SETTINGS,
     GE_API_INVERTER_READ_SETTING,
     GE_API_INVERTER_WRITE_SETTING,
-    GE_API_INVERTER_SETTING_SUPPORTED,
     GE_API_SMART_DEVICES,
     GE_API_SMART_DEVICE,
     GE_API_SMART_DEVICE_DATA,
+    GE_API_DEVICE_INFO,
 )
 
 import requests
@@ -18,7 +18,7 @@ import asyncio
 import logging
 
 _LOGGER = logging.getLogger(__name__)
-TIMEOUT = 30
+TIMEOUT = 240
 RETRIES = 5
 
 
@@ -35,45 +35,41 @@ class GECloudApiClient:
         """
         Read a setting from the inverter
         """
-        if setting_id in GE_API_INVERTER_SETTING_SUPPORTED:
-            for retry in range(RETRIES):
-                data = await self.async_get_inverter_data(
-                    GE_API_INVERTER_READ_SETTING, serial, setting_id, post=True
-                )
-                # -1 is a bad value
-                if data.get("value", -1) == -1:
-                    data = None
-                if data:
-                    break
-            _LOGGER.info("Got setting id {} data {}".format(setting_id, data))
-            return data
-        return None
+        for retry in range(RETRIES):
+            data = await self.async_get_inverter_data(
+                GE_API_INVERTER_READ_SETTING, serial, setting_id, post=True
+            )
+            # -1 is a bad value
+            if data.get("value", -1) == -1:
+                data = None
+            if data:
+                break
+        _LOGGER.info("Got setting id {} data {}".format(setting_id, data))
+        return data
 
     async def async_write_inverter_setting(self, serial, setting_id, value):
         """
         Write a setting to the inverter
         """
-        if setting_id in GE_API_INVERTER_SETTING_SUPPORTED:
-            for retry in range(RETRIES):
-                data = await self.async_get_inverter_data(
-                    GE_API_INVERTER_WRITE_SETTING,
-                    serial,
-                    setting_id,
-                    post=True,
-                    datain={"value": str(value), "context": "homeassistant"},
+        for retry in range(RETRIES):
+            data = await self.async_get_inverter_data(
+                GE_API_INVERTER_WRITE_SETTING,
+                serial,
+                setting_id,
+                post=True,
+                datain={"value": str(value), "context": "homeassistant"},
+            )
+            _LOGGER.info(
+                "Write setting id {} value {} returns {}".format(
+                    setting_id, value, data
                 )
-                _LOGGER.info(
-                    "Write setting id {} value {} returns {}".format(
-                        setting_id, value, data
-                    )
-                )
-                if "success" in data:
-                    if not data["success"]:
-                        data = None
-                if data:
-                    break
-            return data
-        return None
+            )
+            if "success" in data:
+                if not data["success"]:
+                    data = None
+            if data:
+                break
+        return data
 
     async def async_get_inverter_settings(self, serial):
         """
@@ -95,7 +91,11 @@ class GECloudApiClient:
                 name = setting.get("name", None)
                 validation_rules = setting.get("validation_rules", None)
                 if sid and name:
-                    data = await self.async_read_inverter_setting(serial, sid)
+                    if 'writeonly' in validation_rules:
+                        data = {}
+                        data["value"] = False
+                    else:
+                        data = await self.async_read_inverter_setting(serial, sid)
                     if data and "value" in data:
                         value = data["value"]
                         _LOGGER.info(
@@ -154,9 +154,7 @@ class GECloudApiClient:
         device_list = await self.async_get_inverter_data(GE_API_SMART_DEVICES)
         devices = []
         if device_list is not None:
-            _LOGGER.info("Got smart device list {}".format(device_list))
             for device in device_list:
-                _LOGGER.info("Device {}".format(device))
                 uuid = device.get("uuid", None)
                 other_data = device.get("other_data", {})
                 alias = device.get("alias", None)
@@ -168,6 +166,22 @@ class GECloudApiClient:
                 )
                 devices.append({"uuid": uuid, "alias": alias, "local_key": local_key})
         return devices
+
+    async def async_get_device_info(self, serial):
+        """
+        Get the device info
+        """
+        device_list = await self.async_get_inverter_data(GE_API_DEVICE_INFO)
+        if device_list is not None:
+            for device in device_list:
+                inverter = device.get("inverter", None)
+                if inverter:
+                    _LOGGER.info("Got inverter {}".format(inverter))
+                    this_serial = inverter.get("serial", None)
+                    if this_serial and this_serial ==serial:
+                        _LOGGER.info("Got device {} info {}".format(serial, inverter))
+                        return inverter
+        return None
 
     async def async_get_devices(self):
         """
@@ -199,7 +213,9 @@ class GECloudApiClient:
         """
         Get meter data for inverter
         """
-        return await self.async_get_inverter_data(GE_API_INVERTER_METER, serial)
+        meter = await self.async_get_inverter_data(GE_API_INVERTER_METER, serial)
+        _LOGGER.info("Serial {} meter {}".format(serial, meter))
+        return meter
 
     async def async_get_inverter_data(
         self, endpoint, serial="", setting_id="", post=False, datain=None, uuid=""
@@ -234,7 +250,7 @@ class GECloudApiClient:
         except requests.exceptions.JSONDecodeError:
             _LOGGER.error("Failed to decode response from {}".format(url))
             data = None
-        except requests.Timeout:
+        except (requests.Timeout, requests.exceptions.ReadTimeout):
             _LOGGER.error("Timeout from {}".format(url))
             data = None
 

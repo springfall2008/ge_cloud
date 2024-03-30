@@ -47,6 +47,14 @@ SENSORS_INVERTER = (
         state_class=SensorStateClass.MEASUREMENT
     ),
     CloudEntityDescription(
+        key="battery_size",
+        name="Battery Size",
+        unique_id="battery_size",
+        native_unit_of_measurement="kWh",
+        icon="mdi:battery",
+        state_class=SensorStateClass.MEASUREMENT
+    ),
+    CloudEntityDescription(
         key="battery_temperature",
         name="Battery Temperature",
         unique_id="battery_temperature",
@@ -231,8 +239,13 @@ class CloudSensor(CoordinatorEntity[CloudCoordinator], SensorEntity):
         else:
             status = self.coordinator.data.get('status', {})
             meter = self.coordinator.data.get('meter', {})
+            info  = self.coordinator.data.get('info', {})
             if key == 'battery_soc':
                 value = status.get('battery', {}).get('percent', 0.0)
+            elif key == 'battery_size':
+                cap = info.get('info', {}).get('battery', {}).get('nominal_capacity', 0.0)
+                volt = info.get('info', {}).get('battery', {}).get('nominal_voltage', 0.0)
+                value = round(cap * volt / 1000.0, 2)
             elif key == 'battery_temperature':
                 value = status.get('battery', {}).get('temperature', 0.0)
             elif key == 'battery_power':

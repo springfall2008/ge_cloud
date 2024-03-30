@@ -50,6 +50,7 @@ class CloudCoordinator(DataUpdateCoordinator):
         so entities can quickly look up their data.
         """
         if self.type == "inverter":
+            self.data['info'] = await self.api.async_get_device_info(self.serial)
             self.data["status"] = await self.api.async_get_inverter_status(self.serial)
             self.data["meter"] = await self.api.async_get_inverter_meter(self.serial)
             self.data['settings'] = await self.api.async_get_inverter_settings(self.serial)

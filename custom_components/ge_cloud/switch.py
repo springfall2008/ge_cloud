@@ -71,6 +71,8 @@ async def async_setup_default_switches(hass: HomeAssistant, config, serial, asyn
             for validation_rule in validation_rules:
                 if validation_rule.startswith('boolean'):
                     is_switch = True
+                if validation_rule == 'writeonly':
+                    is_switch = True
             if is_switch:
                 _LOGGER.info(f"Setting up Switch {reg_id} ha_name {ha_name} reg_name {reg_name} value {value}")
                 description = CloudSwitchEntityDescription(
@@ -131,6 +133,11 @@ class CloudSwitch(CoordinatorEntity[CloudCoordinator], SwitchEntity):
         key = self.entity_description.key
         reg_number = self.entity_description.reg_number
         if value is not None:
+            validation_rules = self.coordinator.data['settings'][reg_number]['validation_rules']
+            if validation_rules:
+                for rule in validation_rules:
+                    if rule.startswith('exact:'):
+                        value = rule[6:]
             _LOGGER.info(f"Setting {key} number {reg_number} to {value}")
             result = await self.coordinator.api.async_write_inverter_setting(self.serial, reg_number, value)
             if result and ('value' in result):
