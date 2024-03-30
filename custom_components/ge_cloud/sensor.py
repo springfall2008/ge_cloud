@@ -1,5 +1,6 @@
 import voluptuous as vol
 import logging
+import pytz
 
 from homeassistant.util.dt import utcnow
 from homeassistant.core import HomeAssistant
@@ -149,6 +150,13 @@ SENSORS_INVERTER = (
         native_unit_of_measurement="kWh",
         icon="mdi:home",
         state_class=SensorStateClass.MEASUREMENT
+    ),
+    CloudEntityDescription(
+        key="time",
+        name="Inverter time",
+        unique_id="time",
+        icon="mdi:timer-outline",
+        device_class=SensorDeviceClass.TIMESTAMP
     )
 )
 SENSORS_SMART_DEVICE = (
@@ -242,6 +250,14 @@ class CloudSensor(CoordinatorEntity[CloudCoordinator], SensorEntity):
             info  = self.coordinator.data.get('info', {})
             if key == 'battery_soc':
                 value = status.get('battery', {}).get('percent', 0.0)
+            elif key == 'time':
+                value = status.get('time', None)
+                if value:
+                    try:
+                        tz = pytz.timezone("Europe/London")
+                        value = tz.localize(datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ"))
+                    except (ValueError, TypeError):
+                        value = None
             elif key == 'battery_size':
                 cap = info.get('info', {}).get('battery', {}).get('nominal_capacity', 0.0)
                 volt = info.get('info', {}).get('battery', {}).get('nominal_voltage', 0.0)

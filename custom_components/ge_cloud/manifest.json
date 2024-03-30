@@ -14,8 +14,8 @@
   "issue_tracker": "https://github.com/springfall2008/ge_cloud/issues",
   "homekit": {},
   "iot_class": "cloud_polling",
-  "requirements": [],
+  "requirements": ["pytz"],
   "ssdp": [],
-  "version": "1.0.5",
+  "version": "1.0.6",
   "zeroconf": []
 }

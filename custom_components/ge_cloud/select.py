@@ -30,7 +30,7 @@ from typing import Any
 
 BASE_TIME = datetime.strptime("00:00", "%H:%M")
 OPTIONS_TIME = [
-    ((BASE_TIME + timedelta(seconds=minute * 60)).strftime("%H:%M"))
+    ((BASE_TIME + timedelta(seconds=minute * 60)).strftime("%H:%M") + ":00")
     for minute in range(0, 24 * 60, 1)
 ]
 
@@ -132,7 +132,10 @@ class CloudSelect(CoordinatorEntity[CloudCoordinator], SelectEntity):
         _LOGGER.info(
             f"Getting current option for {self.entity_description.key} number {self.reg_number} returns {option}"
         )
-        return option
+        if option and (":" in option):
+            return option[:5] + ":00"
+        else:
+            return option
 
     async def async_select_option(self, option: str) -> None:
         """Update the current value."""
@@ -141,9 +144,9 @@ class CloudSelect(CoordinatorEntity[CloudCoordinator], SelectEntity):
         if option is not None:
             _LOGGER.info(f"Setting {key} number {reg_number} to {option}")
             result = await self.coordinator.api.async_write_inverter_setting(
-                self.serial, reg_number, option
+                self.serial, reg_number, option[:5]
             )
             if result and ("value" in result):
                 option = result["value"]
-                self.coordinator.data["settings"][reg_number]["value"] = option
+                self.coordinator.data["settings"][reg_number]["value"] = option[:5]
             self.async_write_ha_state()
