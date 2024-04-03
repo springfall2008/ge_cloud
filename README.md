@@ -4,7 +4,7 @@ This integration connects the GivEnergy cloud service to Home Assistant
 
 Enter the name of your account e.g. home (useful only if you have more than one) and the API key from the GE Cloud Accounts area.
 
-If all is working then the integration will create some sensors and update them once every 5 minutes.
+If all is working then the integration will create some sensors and update them once every minute (with register updates every 5 minutes)
 
 So far this has been tested on GE Gen1 inverters and GE EMS systems, but other systems should work.
 
