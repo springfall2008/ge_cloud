@@ -2,21 +2,32 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_util
-from homeassistant.util.dt import (now)
+from homeassistant.util.dt import now
 
 import voluptuous as vol
 import logging
 from datetime import datetime, timedelta
 
-from .const import(DOMAIN, CONFIG_ACCOUNT_ID, CONFIG_MAIN_API_KEY, DATA_CLIENT, DATA_ACCOUNT, DATA_ACCOUNT_COORDINATOR, DATA_SERIALS)
+from .const import (
+    DOMAIN,
+    CONFIG_ACCOUNT_ID,
+    CONFIG_MAIN_API_KEY,
+    DATA_CLIENT,
+    DATA_ACCOUNT,
+    DATA_ACCOUNT_COORDINATOR,
+    DATA_SERIALS,
+)
 from .api import GECloudApiClient
 
 _LOGGER = logging.getLogger(__name__)
 
+
 class CloudCoordinator(DataUpdateCoordinator):
     """My custom coordinator."""
 
-    def __init__(self, hass, account_id, serial, api, type="inverter", device_name=None):
+    def __init__(
+        self, hass, account_id, serial, api, type="inverter", device_name=None
+    ):
         """Initialize my coordinator."""
         super().__init__(
             hass,
@@ -24,7 +35,7 @@ class CloudCoordinator(DataUpdateCoordinator):
             # Name of the data. For logging purposes.
             name="GE Cloud Update",
             # Polling interval. Will only be polled if there are subscribers.
-            update_interval=timedelta(seconds=60*5),
+            update_interval=timedelta(seconds=60),
             always_update=True,
         )
         self.account_id = account_id
@@ -32,6 +43,8 @@ class CloudCoordinator(DataUpdateCoordinator):
         self.serial = serial
         self.type = type
         self.data = {}
+        self.update_count = 0
+
         if device_name:
             self.device_name = device_name
         else:
@@ -50,18 +63,43 @@ class CloudCoordinator(DataUpdateCoordinator):
         so entities can quickly look up their data.
         """
         if self.type == "inverter":
-            self.data['info'] = await self.api.async_get_device_info(self.serial)
+            self.data["info"] = await self.api.async_get_device_info(self.serial)
             self.data["status"] = await self.api.async_get_inverter_status(self.serial)
             self.data["meter"] = await self.api.async_get_inverter_meter(self.serial)
-            self.data['settings'] = await self.api.async_get_inverter_settings(self.serial)
+            # Update registers every 5 minutes, other data every minute
+            if (self.update_count % 5) == 0:
+                self.data["settings"] = await self.api.async_get_inverter_settings(
+                    self.serial
+                )
         if self.type == "smart_device":
-            self.data['smart_device'] = await self.api.async_get_smart_device(self.serial)
-            self.data['point'] = await self.api.async_get_smart_device_data(self.serial)
+            if (self.update_count % 5) == 0:
+                self.data["smart_device"] = await self.api.async_get_smart_device(
+                    self.serial
+                )
+            self.data["point"] = await self.api.async_get_smart_device_data(self.serial)
         _LOGGER.info("Coordinator data Update for device {}".format(self.device_name))
+        self.update_count += 1
         return self.data
 
-async def async_setup_cloud_coordinator(hass, account_id: str, serial, type="inverter", device_name=None):
 
-    hass.data[DOMAIN][account_id][DATA_SERIALS][serial][DATA_ACCOUNT_COORDINATOR] = CloudCoordinator(hass, account_id, serial, hass.data[DOMAIN][account_id][DATA_CLIENT], type=type, device_name=device_name)
-    _LOGGER.info("Create Cloud coordinator created for account {} serial".format(account_id, serial))
-    await hass.data[DOMAIN][account_id][DATA_SERIALS][serial][DATA_ACCOUNT_COORDINATOR].first_update()
+async def async_setup_cloud_coordinator(
+    hass, account_id: str, serial, type="inverter", device_name=None
+):
+    hass.data[DOMAIN][account_id][DATA_SERIALS][serial][DATA_ACCOUNT_COORDINATOR] = (
+        CloudCoordinator(
+            hass,
+            account_id,
+            serial,
+            hass.data[DOMAIN][account_id][DATA_CLIENT],
+            type=type,
+            device_name=device_name,
+        )
+    )
+    _LOGGER.info(
+        "Create Cloud coordinator created for account {} serial".format(
+            account_id, serial
+        )
+    )
+    await hass.data[DOMAIN][account_id][DATA_SERIALS][serial][
+        DATA_ACCOUNT_COORDINATOR
+    ].first_update()

@@ -129,9 +129,9 @@ class CloudSelect(CoordinatorEntity[CloudCoordinator], SelectEntity):
     @property
     def current_option(self) -> str:
         option = self.coordinator.data["settings"][self.reg_number]["value"]
-        _LOGGER.info(
-            f"Getting current option for {self.entity_description.key} number {self.reg_number} returns {option}"
-        )
+        # _LOGGER.info(
+        #    f"Getting current option for {self.entity_description.key} number {self.reg_number} returns {option}"
+        # )
         if option and (":" in option):
             return option[:5] + ":00"
         else:
