@@ -84,9 +84,6 @@ async def async_setup_default_selects(
                 if validation_rule.startswith("date_format:H:i"):
                     is_select = True
             if is_select:
-                _LOGGER.info(
-                    f"Setting up Select {reg_id} ha_name {ha_name} reg_name {reg_name} value {value}"
-                )
                 description = CloudSelectEntityDescription(
                     key=ha_name,
                     name=reg_name,

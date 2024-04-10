@@ -47,7 +47,7 @@ SENSORS_INVERTER = (
         unique_id="battery_soc",
         native_unit_of_measurement="%",
         icon="mdi:battery",
-        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.BATTERY,
     ),
     CloudEntityDescription(
         key="battery_size",
@@ -55,71 +55,71 @@ SENSORS_INVERTER = (
         unique_id="battery_size",
         native_unit_of_measurement="kWh",
         icon="mdi:battery",
-        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.ENERGY_STORAGE,
     ),
     CloudEntityDescription(
         key="battery_temperature",
         name="Battery Temperature",
         unique_id="battery_temperature",
-        native_unit_of_measurement="c",
+        native_unit_of_measurement="°C",
         icon="mdi:thermometer",
-        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.TEMPERATURE,
     ),
     CloudEntityDescription(
         key="battery_power",
         name="Battery Power",
         unique_id="battery_power",
-        native_unit_of_measurement="w",
+        native_unit_of_measurement="W",
         icon="mdi:battery-charging-wireless-60",
-        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.POWER,
     ),
     CloudEntityDescription(
         key="inverter_temperature",
         name="Inverter Temperature",
         unique_id="inverter_temperature",
-        native_unit_of_measurement="c",
+        native_unit_of_measurement="°C",
         icon="mdi:thermometer",
-        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.TEMPERATURE,
     ),
     CloudEntityDescription(
         key="inverter_power",
         name="Inverter Power",
         unique_id="inverter_power",
-        native_unit_of_measurement="w",
+        native_unit_of_measurement="W",
         icon="mdi:generator-portable",
-        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.POWER,
     ),
     CloudEntityDescription(
         key="grid_power",
         name="Grid Power",
         unique_id="grid_power",
-        native_unit_of_measurement="w",
+        native_unit_of_measurement="W",
         icon="mdi:transmission-tower",
-        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.POWER,
     ),
     CloudEntityDescription(
         key="grid_voltage",
         name="Grid Voltage",
         unique_id="grid_voltage",
-        native_unit_of_measurement="v",
+        native_unit_of_measurement="V",
         icon="mdi:transmission-tower",
-        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.VOLTAGE,
     ),
     CloudEntityDescription(
         key="solar_power",
         name="Solar Power",
         unique_id="solar_power",
-        native_unit_of_measurement="w",
+        native_unit_of_measurement="W",
         icon="mdi:solar-power",
-        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.POWER,
     ),
     CloudEntityDescription(
         key="consumption_power",
         name="Consumption Power",
         unique_id="consumption_power",
-        native_unit_of_measurement="w",
+        native_unit_of_measurement="W",
         icon="mdi:home",
-        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.POWER,
     ),
     CloudEntityDescription(
         key="solar_today",
@@ -127,7 +127,8 @@ SENSORS_INVERTER = (
         unique_id="solar_today",
         native_unit_of_measurement="kWh",
         icon="mdi:solar-panel-large",
-        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
     ),
     CloudEntityDescription(
         key="grid_import_today",
@@ -135,7 +136,8 @@ SENSORS_INVERTER = (
         unique_id="grid_import_today",
         native_unit_of_measurement="kWh",
         icon="mdi:transmission-tower-import",
-        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
     ),
     CloudEntityDescription(
         key="grid_export_today",
@@ -143,7 +145,8 @@ SENSORS_INVERTER = (
         unique_id="grid_export_today",
         native_unit_of_measurement="kWh",
         icon="mdi:transmission-tower-export",
-        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
     ),
     CloudEntityDescription(
         key="consumption_today",
@@ -151,7 +154,8 @@ SENSORS_INVERTER = (
         unique_id="consumption_today",
         native_unit_of_measurement="kWh",
         icon="mdi:home",
-        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
     ),
     CloudEntityDescription(
         key="battery_charge_today",
@@ -159,7 +163,8 @@ SENSORS_INVERTER = (
         unique_id="battery_charge_today",
         native_unit_of_measurement="kWh",
         icon="mdi:transmission-tower-import",
-        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
     ),
     CloudEntityDescription(
         key="battery_discharge_today",
@@ -167,7 +172,8 @@ SENSORS_INVERTER = (
         unique_id="battery_discharge_today",
         native_unit_of_measurement="kWh",
         icon="mdi:transmission-tower-export",
-        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
     ),
     CloudEntityDescription(
         key="solar_total",
@@ -175,7 +181,8 @@ SENSORS_INVERTER = (
         unique_id="solar_total",
         native_unit_of_measurement="kWh",
         icon="mdi:solar-panel-large",
-        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
     ),
     CloudEntityDescription(
         key="grid_import_total",
@@ -183,7 +190,8 @@ SENSORS_INVERTER = (
         unique_id="grid_import_total",
         native_unit_of_measurement="kWh",
         icon="mdi:transmission-tower-import",
-        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
     ),
     CloudEntityDescription(
         key="grid_export_total",
@@ -191,7 +199,8 @@ SENSORS_INVERTER = (
         unique_id="grid_export_total",
         native_unit_of_measurement="kWh",
         icon="mdi:transmission-tower-export",
-        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
     ),
     CloudEntityDescription(
         key="consumption_total",
@@ -199,7 +208,8 @@ SENSORS_INVERTER = (
         unique_id="consumption_total",
         native_unit_of_measurement="kWh",
         icon="mdi:home",
-        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
     ),
     CloudEntityDescription(
         key="battery_charge_total",
@@ -207,7 +217,8 @@ SENSORS_INVERTER = (
         unique_id="battery_charge_total",
         native_unit_of_measurement="kWh",
         icon="mdi:transmission-tower-import",
-        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
     ),
     CloudEntityDescription(
         key="battery_discharge_total",
@@ -215,7 +226,8 @@ SENSORS_INVERTER = (
         unique_id="battery_discharge_total",
         native_unit_of_measurement="kWh",
         icon="mdi:transmission-tower-export",
-        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
     ),
     CloudEntityDescription(
         key="time",
@@ -230,9 +242,9 @@ SENSORS_SMART_DEVICE = (
         key="power",
         name="Power",
         unique_id="power",
-        native_unit_of_measurement="w",
+        native_unit_of_measurement="W",
         icon="mdi:information",
-        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.POWER,
     ),
 )
 
@@ -329,14 +341,15 @@ class CloudSensor(CoordinatorEntity[CloudCoordinator], SensorEntity):
                 value = status.get("battery", {}).get("percent", 0.0)
             elif key == "time":
                 value = status.get("time", None)
+                _LOGGER.info(f"Time is {value}")
+
                 if value:
+                    value = value.replace("Z", "+00:00")
                     try:
-                        tz = pytz.timezone("Europe/London")
-                        value = tz.localize(
-                            datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ")
-                        )
+                        value = datetime.strptime(value, "%Y-%m-%dT%H:%M:%S%z")
                     except (ValueError, TypeError):
                         value = None
+                _LOGGER.info(f"Local Time is {value}")
             elif key == "battery_size":
                 cap = (
                     info.get("info", {}).get("battery", {}).get("nominal_capacity", 0.0)

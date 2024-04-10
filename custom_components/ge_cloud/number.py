@@ -78,11 +78,11 @@ async def async_setup_default_numbers(
                 device_class = NumberDeviceClass.BATTERY
                 native_unit_of_measurement = "%"
             elif "_power_percent" in ha_name:
-                device_class = NumberDeviceClass.POWER
+                device_class = NumberDeviceClass.POWER_FACTOR
                 native_unit_of_measurement = "%"
             elif "_power" in ha_name:
                 device_class = NumberDeviceClass.POWER
-                native_unit_of_measurement = "w"
+                native_unit_of_measurement = "W"
             is_number = False
             for validation_rule in validation_rules:
                 if validation_rule.startswith("between:"):

@@ -42,6 +42,8 @@ class GECloudApiClient:
             # -1 is a bad value
             if data.get("value", -1) == -1:
                 data = None
+            elif data.get("value", -1) == -2:
+                data = None
             if data:
                 break
         _LOGGER.info("Got setting id {} data {}".format(setting_id, data))
@@ -91,7 +93,7 @@ class GECloudApiClient:
                 name = setting.get("name", None)
                 validation_rules = setting.get("validation_rules", None)
                 if sid and name:
-                    if 'writeonly' in validation_rules:
+                    if "writeonly" in validation_rules:
                         data = {}
                         data["value"] = False
                     else:
@@ -178,7 +180,7 @@ class GECloudApiClient:
                 if inverter:
                     _LOGGER.info("Got inverter {}".format(inverter))
                     this_serial = inverter.get("serial", None)
-                    if this_serial and this_serial ==serial:
+                    if this_serial and this_serial == serial:
                         _LOGGER.info("Got device {} info {}".format(serial, inverter))
                         return inverter
         return None
