@@ -2,7 +2,7 @@ import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
 
 DOMAIN = "ge_cloud"
-INTEGRATION_VERSION = "1.0.10"
+INTEGRATION_VERSION = "1.1.0"
 CONFIG_VERSION = 1
 
 CONFIG_KIND = "kind"

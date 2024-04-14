@@ -55,6 +55,7 @@ class GECloudApiClient:
         Write a setting to the inverter
         """
         for retry in range(RETRIES):
+            await asyncio.sleep(0.2 * (retry + 1))
             data = await self.async_get_inverter_data(
                 GE_API_INVERTER_WRITE_SETTING,
                 serial,
@@ -97,12 +98,14 @@ class GECloudApiClient:
                 name = setting.get("name", None)
 
                 validation_rules = setting.get("validation_rules", None)
+                validation = setting.get("validation", None)
                 if sid and name:
                     if "writeonly" in validation_rules:
                         results[sid] = {
                             "name": name,
                             "value": False,
                             "validation_rules": validation_rules,
+                            "validation": validation,
                         }
                     else:
                         future = {}
@@ -112,6 +115,7 @@ class GECloudApiClient:
                             self.async_read_inverter_setting(serial, sid)
                         )
                         future["validation_rules"] = validation_rules
+                        future["validation"] = validation
                         futures.append(future)
 
             # Wait for all the futures to complete and store results
@@ -119,6 +123,7 @@ class GECloudApiClient:
                 sid = future["sid"]
                 name = future["name"]
                 validation_rules = future["validation_rules"]
+                validation = future["validation"]
                 data = await future["data"]
                 if data and ("value" in data):
                     value = data["value"]
@@ -132,6 +137,7 @@ class GECloudApiClient:
                             "name": name,
                             "value": value,
                             "validation_rules": validation_rules,
+                            "validation": validation,
                         }
         return results
 

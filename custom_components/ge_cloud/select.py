@@ -30,6 +30,10 @@ from typing import Any
 
 BASE_TIME = datetime.strptime("00:00", "%H:%M")
 OPTIONS_TIME = [
+    ((BASE_TIME + timedelta(seconds=minute * 60)).strftime("%H:%M"))
+    for minute in range(0, 24 * 60, 1)
+]
+OPTIONS_TIME_FULL = [
     ((BASE_TIME + timedelta(seconds=minute * 60)).strftime("%H:%M") + ":00")
     for minute in range(0, 24 * 60, 1)
 ]
@@ -77,13 +81,35 @@ async def async_setup_default_selects(
             ha_name = reg_name.lower().replace(" ", "_").replace("%", "percent")
             value = coordinator.data["settings"][reg_id]["value"]
             validation_rules = coordinator.data["settings"][reg_id]["validation_rules"]
+            validation = coordinator.data["settings"][reg_id]["validation"]
             device_class = None
             native_unit_of_measurement = ""
-            is_select = False
+            is_select_date = False
+            is_select_options = False
+            options = []
+            options_text = []
             for validation_rule in validation_rules:
                 if validation_rule.startswith("date_format:H:i"):
-                    is_select = True
-            if is_select:
+                    is_select_date = True
+                    options = OPTIONS_TIME
+                    options_text = OPTIONS_TIME_FULL
+                if validation_rule.startswith("in:"):
+                    is_select_options = True
+                    options = validation_rule.split(":")[1].split(",")
+                    if not options_text:
+                        options_text = options
+            if validation.startswith("Value must be one of:"):
+                pre, post = validation.split("(")
+                post = post.replace(")", "")
+                post = post.replace(", ", ",")
+                options_text = post.split(",")
+            if is_select_options:
+                _LOGGER.info(
+                    "Setting up select {} ha_name {} reg_name {} options {} options_text {}".format(
+                        reg_id, ha_name, reg_name, options, options_text
+                    )
+                )
+            if is_select_date or is_select_options:
                 description = CloudSelectEntityDescription(
                     key=ha_name,
                     name=reg_name,
@@ -91,7 +117,11 @@ async def async_setup_default_selects(
                     reg_number=reg_id,
                     device_class=device_class,
                 )
-                cloud_selects.append(CloudSelect(coordinator, description, serial))
+                cloud_selects.append(
+                    CloudSelect(
+                        coordinator, description, serial, options, options_text, True
+                    )
+                )
     if cloud_selects:
         async_add_entities(cloud_selects)
 
@@ -104,7 +134,9 @@ class CloudSelect(CoordinatorEntity[CloudCoordinator], SelectEntity):
     entity_description: str
     _attr_has_entity_name = True
 
-    def __init__(self, coordinator, description, serial) -> None:
+    def __init__(
+        self, coordinator, description, serial, options, options_text, write_value
+    ) -> None:
         super().__init__(coordinator)
         self.entity_description = description
 
@@ -115,22 +147,34 @@ class CloudSelect(CoordinatorEntity[CloudCoordinator], SelectEntity):
             f"{coordinator.account_id}_{serial}_{description.unique_id}"
         )
         self._attr_icon = description.icon
-        self._attr_options = OPTIONS_TIME
+        self._attr_options = options_text
         self.reg_number = description.reg_number
         self.serial = serial
+        self.options_value = options
+        self.options_text = options_text
+        self.write_value = write_value
 
     @property
     def available(self) -> bool:
         return True
 
+    def option_index(self, value):
+        try:
+            idx = self.options_text.index(value)
+        except ValueError:
+            try:
+                idx = self.options_value.index(value)
+            except ValueError:
+                idx = -1
+        return idx
+
     @property
     def current_option(self) -> str:
         option = self.coordinator.data["settings"][self.reg_number]["value"]
-        # _LOGGER.info(
-        #    f"Getting current option for {self.entity_description.key} number {self.reg_number} returns {option}"
-        # )
-        if option and (":" in option):
-            return option[:5] + ":00"
+
+        idx = self.option_index(option)
+        if idx >= 0:
+            return self.options_text[idx]
         else:
             return option
 
@@ -140,10 +184,25 @@ class CloudSelect(CoordinatorEntity[CloudCoordinator], SelectEntity):
         reg_number = self.entity_description.reg_number
         if option is not None:
             _LOGGER.info(f"Setting {key} number {reg_number} to {option}")
-            result = await self.coordinator.api.async_write_inverter_setting(
-                self.serial, reg_number, option[:5]
-            )
-            if result and ("value" in result):
-                option = result["value"]
-                self.coordinator.data["settings"][reg_number]["value"] = option[:5]
+            idx = self.option_index(option)
+            if idx >= 0:
+                if self.write_value:
+                    option_value = self.options_value[idx]
+                else:
+                    option_value = self.options_text[idx]
+
+                result = await self.coordinator.api.async_write_inverter_setting(
+                    self.serial, reg_number, option_value
+                )
+                if result and ("value" in result):
+                    idx = self.option_index(result["value"])
+                    if idx >= 0:
+                        option = self.options_text[idx]
+                        self.coordinator.data["settings"][reg_number]["value"] = option
+                    else:
+                        _LOGGER.warning(
+                            "WARN: Invalid option respone {} when writing selection to {}".format(
+                                result["value"], self._attr_key
+                            )
+                        )
             self.async_write_ha_state()
