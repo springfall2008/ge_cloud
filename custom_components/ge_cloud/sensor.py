@@ -114,6 +114,54 @@ SENSORS_INVERTER = (
         device_class=SensorDeviceClass.POWER,
     ),
     CloudEntityDescription(
+        key="solar_power_string1",
+        name="Solar Power String 1",
+        unique_id="solar_power_string1",
+        native_unit_of_measurement="W",
+        icon="mdi:solar-power",
+        device_class=SensorDeviceClass.POWER,
+    ),
+    CloudEntityDescription(
+        key="solar_power_string2",
+        name="Solar Power String 2",
+        unique_id="solar_power_string2",
+        native_unit_of_measurement="W",
+        icon="mdi:solar-power",
+        device_class=SensorDeviceClass.POWER,
+    ),
+    CloudEntityDescription(
+        key="solar_voltage_string1",
+        name="Solar Voltage String 1",
+        unique_id="solar_voltage_string1",
+        native_unit_of_measurement="V",
+        icon="mdi:transmission-tower",
+        device_class=SensorDeviceClass.VOLTAGE,
+    ),
+    CloudEntityDescription(
+        key="solar_voltage_string2",
+        name="Solar Voltage String 2",
+        unique_id="solar_voltage_string2",
+        native_unit_of_measurement="V",
+        icon="mdi:transmission-tower",
+        device_class=SensorDeviceClass.VOLTAGE,
+    ),
+    CloudEntityDescription(
+        key="solar_current_string1",
+        name="Solar Current String 1",
+        unique_id="solar_current_string1",
+        native_unit_of_measurement="A",
+        icon="mdi:transmission-tower",
+        device_class=SensorDeviceClass.CURRENT,
+    ),
+    CloudEntityDescription(
+        key="solar_current_string2",
+        name="Solar Current String 2",
+        unique_id="solar_current_string2",
+        native_unit_of_measurement="A",
+        icon="mdi:transmission-tower",
+        device_class=SensorDeviceClass.CURRENT,
+    ),
+    CloudEntityDescription(
         key="consumption_power",
         name="Consumption Power",
         unique_id="consumption_power",
@@ -372,6 +420,36 @@ class CloudSensor(CoordinatorEntity[CloudCoordinator], SensorEntity):
                 value = status.get("grid", {}).get("power", 0.0)
             elif key == "solar_power":
                 value = status.get("solar", {}).get("power", 0.0)
+            elif key == "solar_power_string1":
+                value = None
+                array = status.get("solar", {}).get("arrays", [])
+                if len(array) > 0:
+                    value = array[0].get("power", 0.0)
+            elif key == "solar_power_string2":
+                value = None
+                array = status.get("solar", {}).get("arrays", [])
+                if len(array) > 1:
+                    value = array[1].get("power", 0.0)
+            elif key == "solar_current_string1":
+                value = None
+                array = status.get("solar", {}).get("arrays", [])
+                if len(array) > 0:
+                    value = array[0].get("current", 0.0)
+            elif key == "solar_current_string2":
+                value = None
+                array = status.get("solar", {}).get("arrays", [])
+                if len(array) > 1:
+                    value = array[1].get("current", 0.0)
+            elif key == "solar_voltage_string1":
+                value = None
+                array = status.get("solar", {}).get("arrays", [])
+                if len(array) > 0:
+                    value = array[0].get("voltage", 0.0)
+            elif key == "solar_voltage_string2":
+                value = None
+                array = status.get("solar", {}).get("arrays", [])
+                if len(array) > 1:
+                    value = array[1].get("voltage", 0.0)
             elif key == "consumption_power":
                 value = status.get("consumption", 0.0)
             elif key == "solar_today":
