@@ -36,7 +36,7 @@ class GECloudApiClient:
         Read a setting from the inverter
         """
         for retry in range(RETRIES):
-            await asyncio.sleep(0.2)
+            await asyncio.sleep(0.2 * (retry + 1))
             data = await self.async_get_inverter_data(
                 GE_API_INVERTER_READ_SETTING, serial, setting_id, post=True
             )
@@ -74,7 +74,7 @@ class GECloudApiClient:
                 break
         return data
 
-    async def async_get_inverter_settings(self, serial):
+    async def async_get_inverter_settings(self, serial, previous={}):
         """
         Get settings for account
         """
@@ -87,7 +87,7 @@ class GECloudApiClient:
                     serial, self.register_list[serial]
                 )
             )
-        results = {}
+        results = previous.copy()
         if serial in self.register_list:
             # Async read for all the registers
             futures = []
@@ -120,18 +120,19 @@ class GECloudApiClient:
                 name = future["name"]
                 validation_rules = future["validation_rules"]
                 data = await future["data"]
-                if data and "value" in data:
+                if data and ("value" in data):
                     value = data["value"]
                     _LOGGER.info(
                         "Setting id {} data {} name {} value {}".format(
                             sid, data, name, value
                         )
                     )
-                    results[sid] = {
-                        "name": name,
-                        "value": value,
-                        "validation_rules": validation_rules,
-                    }
+                    if value is not None:
+                        results[sid] = {
+                            "name": name,
+                            "value": value,
+                            "validation_rules": validation_rules,
+                        }
         return results
 
     async def async_get_smart_device_data(self, uuid):

@@ -69,7 +69,7 @@ class CloudCoordinator(DataUpdateCoordinator):
             # Update registers every 5 minutes, other data every minute
             if (self.update_count % 5) == 0:
                 self.data["settings"] = await self.api.async_get_inverter_settings(
-                    self.serial
+                    self.serial, self.data.get("settings", {})
                 )
         if self.type == "smart_device":
             if (self.update_count % 5) == 0:
