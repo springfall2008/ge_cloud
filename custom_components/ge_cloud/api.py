@@ -16,10 +16,11 @@ import requests
 import json
 import asyncio
 import logging
+import random
 
 _LOGGER = logging.getLogger(__name__)
 TIMEOUT = 240
-RETRIES = 10
+RETRIES = 20
 
 
 class GECloudApiClient:
@@ -36,18 +37,21 @@ class GECloudApiClient:
         Read a setting from the inverter
         """
         for retry in range(RETRIES):
-            await asyncio.sleep(0.2 * (retry + 1))
             data = await self.async_get_inverter_data(
                 GE_API_INVERTER_READ_SETTING, serial, setting_id, post=True
             )
             # -1 is a bad value
-            if data.get("value", -1) == -1:
+            if data and data.get("value", -1) == -1:
                 data = None
-            elif data.get("value", -1) == -2:
+            elif data and data.get("value", -1) == -2:
                 data = None
             if data:
                 break
-        _LOGGER.info("Got setting id {} data {}".format(setting_id, data))
+            await asyncio.sleep(1 * (retry + 1))
+        if data is None:
+            _LOGGER.error("Failed to read setting id {}".format(setting_id))
+        else:
+            _LOGGER.info("Got setting id {} data {}".format(setting_id, data))
         return data
 
     async def async_write_inverter_setting(self, serial, setting_id, value):
@@ -73,6 +77,11 @@ class GECloudApiClient:
                     data = None
             if data:
                 break
+            await asyncio.sleep(0.5 * (retry + 1))
+        if data is None:
+            _LOGGER.error(
+                "Failed to write setting id {} value {}".format(setting_id, value)
+            )
         return data
 
     async def async_get_inverter_settings(self, serial, previous={}):
@@ -80,7 +89,7 @@ class GECloudApiClient:
         Get settings for account
         """
         if serial not in self.register_list:
-            self.register_list[serial] = await self.async_get_inverter_data(
+            self.register_list[serial] = await self.async_get_inverter_data_retry(
                 GE_API_INVERTER_SETTINGS, serial
             )
             _LOGGER.info(
@@ -93,6 +102,7 @@ class GECloudApiClient:
             # Async read for all the registers
             futures = []
             loop = asyncio.get_running_loop()
+
             for setting in self.register_list[serial]:
                 sid = setting.get("id", None)
                 name = setting.get("name", None)
@@ -117,6 +127,7 @@ class GECloudApiClient:
                         future["validation_rules"] = validation_rules
                         future["validation"] = validation
                         futures.append(future)
+                        await asyncio.sleep(1)
 
             # Wait for all the futures to complete and store results
             for future in futures:
@@ -145,7 +156,9 @@ class GECloudApiClient:
         """
         Get smart device data points
         """
-        data = await self.async_get_inverter_data(GE_API_SMART_DEVICE_DATA, uuid=uuid)
+        data = await self.async_get_inverter_data_retry(
+            GE_API_SMART_DEVICE_DATA, uuid=uuid
+        )
         for point in data:
             _LOGGER.info("Smart device point {}".format(point))
             return point
@@ -155,7 +168,9 @@ class GECloudApiClient:
         """
         Get smart device
         """
-        device = await self.async_get_inverter_data(GE_API_SMART_DEVICE, uuid=uuid)
+        device = await self.async_get_inverter_data_retry(
+            GE_API_SMART_DEVICE, uuid=uuid
+        )
         _LOGGER.info("Device {}".format(device))
         if device:
             uuid = device.get("uuid", None)
@@ -182,7 +197,7 @@ class GECloudApiClient:
         """
         Get list of smart devices
         """
-        device_list = await self.async_get_inverter_data(GE_API_SMART_DEVICES)
+        device_list = await self.async_get_inverter_data_retry(GE_API_SMART_DEVICES)
         devices = []
         if device_list is not None:
             for device in device_list:
@@ -202,7 +217,7 @@ class GECloudApiClient:
         """
         Get the device info
         """
-        device_list = await self.async_get_inverter_data(GE_API_DEVICE_INFO)
+        device_list = await self.async_get_inverter_data_retry(GE_API_DEVICE_INFO)
         if device_list is not None:
             for device in device_list:
                 inverter = device.get("inverter", None)
@@ -218,7 +233,7 @@ class GECloudApiClient:
         """
         Get list of inverters
         """
-        device_list = await self.async_get_inverter_data(GE_API_DEVICES)
+        device_list = await self.async_get_inverter_data_retry(GE_API_DEVICES)
         serials = []
         if device_list is not None:
             _LOGGER.info("Got device list {}".format(device_list))
@@ -238,15 +253,32 @@ class GECloudApiClient:
         """
         Get basis status for inverter
         """
-        return await self.async_get_inverter_data(GE_API_INVERTER_STATUS, serial)
+        return await self.async_get_inverter_data_retry(GE_API_INVERTER_STATUS, serial)
 
     async def async_get_inverter_meter(self, serial):
         """
         Get meter data for inverter
         """
-        meter = await self.async_get_inverter_data(GE_API_INVERTER_METER, serial)
+        meter = await self.async_get_inverter_data_retry(GE_API_INVERTER_METER, serial)
         _LOGGER.info("Serial {} meter {}".format(serial, meter))
         return meter
+
+    async def async_get_inverter_data_retry(
+        self, endpoint, serial="", setting_id="", post=False, datain=None, uuid=""
+    ):
+        """
+        Retry API call
+        """
+        for retry in range(RETRIES):
+            data = await self.async_get_inverter_data(
+                endpoint, serial, setting_id, post, datain, uuid
+            )
+            if data:
+                break
+            await asyncio.sleep(1 * (retry + 1))
+        if data is None:
+            _LOGGER.error("Failed to get data from {}".format(endpoint))
+        return data
 
     async def async_get_inverter_data(
         self, endpoint, serial="", setting_id="", post=False, datain=None, uuid=""
@@ -262,7 +294,6 @@ class GECloudApiClient:
             "Content-Type": "application/json",
             "Accept": "application/json",
         }
-        _LOGGER.info("GE Cloud API call url {} data {}".format(url, datain))
         if post:
             if datain:
                 response = await asyncio.to_thread(
@@ -290,9 +321,14 @@ class GECloudApiClient:
             data = data["data"]
         else:
             data = None
+        _LOGGER.info(
+            "GE Cloud API call url {} data {} response {} data {}".format(
+                url, datain, response.status_code, data
+            )
+        )
         if response.status_code in [200, 201]:
             return data
-        _LOGGER.error(
-            "Failed to get data from {} code {}".format(url, response.status_code)
-        )
+        if response.status_code == 429:
+            # Rate limiting so wait up to 30 seconds
+            await asyncio.sleep(random.random() * 30)
         return None
