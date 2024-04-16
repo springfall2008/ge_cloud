@@ -354,7 +354,10 @@ class CloudSensor(CoordinatorEntity[CloudCoordinator], SensorEntity):
 
     @property
     def available(self) -> bool:
-        return True
+        """
+        Return if entity is available
+        """
+        return not (self.native_value is None)
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
@@ -374,108 +377,108 @@ class CloudSensor(CoordinatorEntity[CloudCoordinator], SensorEntity):
             return self.entity_description.name
 
         key = self.entity_description.key
-        value = 0.0
+        value = None
 
         if self.coordinator.type == "smart_device":
             smart_device = self.coordinator.data.get("smart_device", {})
             smart_point = self.coordinator.data.get("point", {})
             if key == "power":
-                value = smart_point.get("power", 0)
+                value = smart_point.get("power", None)
         else:
             status = self.coordinator.data.get("status", {})
             meter = self.coordinator.data.get("meter", {})
             info = self.coordinator.data.get("info", {})
             if key == "battery_soc":
-                value = status.get("battery", {}).get("percent", 0.0)
+                value = status.get("battery", {}).get("percent", None)
             elif key == "time":
                 value = status.get("time", None)
-                _LOGGER.info(f"Time is {value}")
-
                 if value:
                     value = value.replace("Z", "+00:00")
                     try:
                         value = datetime.strptime(value, "%Y-%m-%dT%H:%M:%S%z")
                     except (ValueError, TypeError):
                         value = None
-                _LOGGER.info(f"Local Time is {value}")
             elif key == "battery_size":
                 cap = (
-                    info.get("info", {}).get("battery", {}).get("nominal_capacity", 0.0)
+                    info.get("info", {})
+                    .get("battery", {})
+                    .get("nominal_capacity", None)
                 )
                 volt = (
-                    info.get("info", {}).get("battery", {}).get("nominal_voltage", 0.0)
+                    info.get("info", {}).get("battery", {}).get("nominal_voltage", None)
                 )
-                value = round(cap * volt / 1000.0, 2)
+                if cap and volt:
+                    value = round(cap * volt / 1000.0, 2)
             elif key == "battery_temperature":
-                value = status.get("battery", {}).get("temperature", 0.0)
+                value = status.get("battery", {}).get("temperature", None)
             elif key == "battery_power":
-                value = status.get("battery", {}).get("power", 0.0)
+                value = status.get("battery", {}).get("power", None)
             elif key == "inverter_temperature":
-                value = status.get("inverter", {}).get("temperature", 0.0)
+                value = status.get("inverter", {}).get("temperature", None)
             elif key == "inverter_power":
-                value = status.get("inverter", {}).get("power", 0.0)
+                value = status.get("inverter", {}).get("power", None)
             elif key == "grid_voltage":
-                value = status.get("grid", {}).get("voltage", 0.0)
+                value = status.get("grid", {}).get("voltage", None)
             elif key == "grid_power":
-                value = status.get("grid", {}).get("power", 0.0)
+                value = status.get("grid", {}).get("power", None)
             elif key == "solar_power":
-                value = status.get("solar", {}).get("power", 0.0)
+                value = status.get("solar", {}).get("power", None)
             elif key == "solar_power_string1":
                 value = None
                 array = status.get("solar", {}).get("arrays", [])
                 if len(array) > 0:
-                    value = array[0].get("power", 0.0)
+                    value = array[0].get("power", None)
             elif key == "solar_power_string2":
                 value = None
                 array = status.get("solar", {}).get("arrays", [])
                 if len(array) > 1:
-                    value = array[1].get("power", 0.0)
+                    value = array[1].get("power", None)
             elif key == "solar_current_string1":
                 value = None
                 array = status.get("solar", {}).get("arrays", [])
                 if len(array) > 0:
-                    value = array[0].get("current", 0.0)
+                    value = array[0].get("current", None)
             elif key == "solar_current_string2":
                 value = None
                 array = status.get("solar", {}).get("arrays", [])
                 if len(array) > 1:
-                    value = array[1].get("current", 0.0)
+                    value = array[1].get("current", None)
             elif key == "solar_voltage_string1":
                 value = None
                 array = status.get("solar", {}).get("arrays", [])
                 if len(array) > 0:
-                    value = array[0].get("voltage", 0.0)
+                    value = array[0].get("voltage", None)
             elif key == "solar_voltage_string2":
                 value = None
                 array = status.get("solar", {}).get("arrays", [])
                 if len(array) > 1:
-                    value = array[1].get("voltage", 0.0)
+                    value = array[1].get("voltage", None)
             elif key == "consumption_power":
-                value = status.get("consumption", 0.0)
+                value = status.get("consumption", None)
             elif key == "solar_today":
-                value = meter.get("today", {}).get("solar", 0.0)
+                value = meter.get("today", {}).get("solar", None)
             elif key == "grid_import_today":
-                value = meter.get("today", {}).get("grid", 0.0).get("import", 0.0)
+                value = meter.get("today", {}).get("grid", {}).get("import", None)
             elif key == "grid_export_today":
-                value = meter.get("today", {}).get("grid", 0.0).get("export", 0.0)
+                value = meter.get("today", {}).get("grid", {}).get("export", None)
             elif key == "consumption_today":
-                value = meter.get("today", {}).get("consumption", 0.0)
+                value = meter.get("today", {}).get("consumption", None)
             elif key == "battery_charge_today":
-                value = meter.get("today", {}).get("battery", 0.0).get("charge", 0.0)
+                value = meter.get("today", {}).get("battery", {}).get("charge", None)
             elif key == "battery_discharge_today":
-                value = meter.get("today", {}).get("battery", 0.0).get("discharge", 0.0)
+                value = meter.get("today", {}).get("battery", {}).get("discharge", None)
             elif key == "solar_total":
-                value = meter.get("total", {}).get("solar", 0.0)
+                value = meter.get("total", {}).get("solar", None)
             elif key == "grid_import_total":
-                value = meter.get("total", {}).get("grid", 0.0).get("import", 0.0)
+                value = meter.get("total", {}).get("grid", {}).get("import", None)
             elif key == "grid_export_total":
-                value = meter.get("total", {}).get("grid", 0.0).get("export", 0.0)
+                value = meter.get("total", {}).get("grid", {}).get("export", None)
             elif key == "consumption_total":
-                value = meter.get("total", {}).get("consumption", 0.0)
+                value = meter.get("total", {}).get("consumption", None)
             elif key == "battery_charge_total":
-                value = meter.get("total", {}).get("battery", 0.0).get("charge", 0.0)
+                value = meter.get("total", {}).get("battery", {}).get("charge", None)
             elif key == "battery_discharge_total":
-                value = meter.get("total", {}).get("battery", 0.0).get("discharge", 0.0)
+                value = meter.get("total", {}).get("battery", {}).get("discharge", None)
         return value
 
     @property

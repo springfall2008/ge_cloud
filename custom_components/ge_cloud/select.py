@@ -156,7 +156,10 @@ class CloudSelect(CoordinatorEntity[CloudCoordinator], SelectEntity):
 
     @property
     def available(self) -> bool:
-        return True
+        """
+        Return true if the selector is available
+        """
+        return not (self.current_option is None)
 
     def option_index(self, value):
         try:

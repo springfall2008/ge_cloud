@@ -127,7 +127,10 @@ class CloudNumber(CoordinatorEntity[CloudCoordinator], NumberEntity):
 
     @property
     def available(self) -> bool:
-        return True
+        """
+        Return true if the number is available
+        """
+        return not (self.native_value is None)
 
     @property
     def native_value(self) -> float | None:
@@ -140,7 +143,7 @@ class CloudNumber(CoordinatorEntity[CloudCoordinator], NumberEntity):
         status = self.coordinator.data.get("status", {})
         meter = self.coordinator.data.get("meter", {})
         settings = self.coordinator.data.get("settings", {})
-        value = settings.get(reg_number, {}).get("value", 0)
+        value = settings.get(reg_number, {}).get("value", None)
         return value
 
     @property

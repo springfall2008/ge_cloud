@@ -20,7 +20,8 @@ import random
 
 _LOGGER = logging.getLogger(__name__)
 TIMEOUT = 240
-RETRIES = 20
+RETRIES = 10
+MAX_THREADS = 2
 
 
 class GECloudApiClient:
@@ -45,13 +46,13 @@ class GECloudApiClient:
                 data = None
             elif data and data.get("value", -1) == -2:
                 data = None
+                # Inverter timeout, try to spread requests out
+                await asyncio.sleep(random.random() * 2)
             if data:
                 break
             await asyncio.sleep(1 * (retry + 1))
         if data is None:
-            _LOGGER.error("Failed to read setting id {}".format(setting_id))
-        else:
-            _LOGGER.info("Got setting id {} data {}".format(setting_id, data))
+            _LOGGER.warning("Failed to read setting id {}".format(setting_id))
         return data
 
     async def async_write_inverter_setting(self, serial, setting_id, value):
@@ -59,7 +60,6 @@ class GECloudApiClient:
         Write a setting to the inverter
         """
         for retry in range(RETRIES):
-            await asyncio.sleep(0.2 * (retry + 1))
             data = await self.async_get_inverter_data(
                 GE_API_INVERTER_WRITE_SETTING,
                 serial,
@@ -77,14 +77,14 @@ class GECloudApiClient:
                     data = None
             if data:
                 break
-            await asyncio.sleep(0.5 * (retry + 1))
+            await asyncio.sleep(1 * (retry + 1))
         if data is None:
             _LOGGER.error(
                 "Failed to write setting id {} value {}".format(setting_id, value)
             )
         return data
 
-    async def async_get_inverter_settings(self, serial, previous={}):
+    async def async_get_inverter_settings(self, serial, first=False, previous={}):
         """
         Get settings for account
         """
@@ -98,11 +98,15 @@ class GECloudApiClient:
                 )
             )
         results = previous.copy()
+
         if serial in self.register_list:
             # Async read for all the registers
             futures = []
+            pending = []
+            complete = []
             loop = asyncio.get_running_loop()
 
+            # Create the read tasks
             for setting in self.register_list[serial]:
                 sid = setting.get("id", None)
                 name = setting.get("name", None)
@@ -120,36 +124,57 @@ class GECloudApiClient:
                     else:
                         future = {}
                         future["sid"] = sid
+                        future["serial"] = serial
                         future["name"] = name
-                        future["data"] = loop.create_task(
-                            self.async_read_inverter_setting(serial, sid)
-                        )
                         future["validation_rules"] = validation_rules
                         future["validation"] = validation
-                        futures.append(future)
-                        await asyncio.sleep(1)
+                        pending.append(future)
+
+            # Perform all the reads in parallel
+            while pending or futures:
+                while len(futures) < MAX_THREADS and pending:
+                    future = pending.pop(0)
+                    if not first:
+                        future["future"] = loop.create_task(
+                            self.async_read_inverter_setting(
+                                future["serial"], future["sid"]
+                            )
+                        )
+                    futures.append(future)
+                if futures:
+                    future = futures.pop(0)
+                    if first:
+                        future["data"] = None
+                    else:
+                        future["data"] = await future["future"]
+                    future["future"] = None
+                    complete.append(future)
+                if not first:
+                    await asyncio.sleep(0.2)
 
             # Wait for all the futures to complete and store results
-            for future in futures:
+            for future in complete:
                 sid = future["sid"]
                 name = future["name"]
                 validation_rules = future["validation_rules"]
                 validation = future["validation"]
-                data = await future["data"]
+                data = future["data"]
                 if data and ("value" in data):
                     value = data["value"]
-                    _LOGGER.info(
-                        "Setting id {} data {} name {} value {}".format(
-                            sid, data, name, value
-                        )
+                else:
+                    value = None
+
+                _LOGGER.info(
+                    "Setting id {} data {} name {} value {}".format(
+                        sid, data, name, value
                     )
-                    if value is not None:
-                        results[sid] = {
-                            "name": name,
-                            "value": value,
-                            "validation_rules": validation_rules,
-                            "validation": validation,
-                        }
+                )
+                results[sid] = {
+                    "name": name,
+                    "value": value,
+                    "validation_rules": validation_rules,
+                    "validation": validation,
+                }
         return results
 
     async def async_get_smart_device_data(self, uuid):

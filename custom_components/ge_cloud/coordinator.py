@@ -54,9 +54,9 @@ class CloudCoordinator(DataUpdateCoordinator):
         """
         Force update of data
         """
-        await self._async_update_data()
+        return await self._async_update_data(first=True)
 
-    async def _async_update_data(self):
+    async def _async_update_data(self, first=False):
         """Fetch data from API endpoint.
 
         This is the place to pre-process the data to lookup tables
@@ -69,7 +69,7 @@ class CloudCoordinator(DataUpdateCoordinator):
             # Update registers every 5 minutes, other data every minute
             if (self.update_count % 5) == 0:
                 self.data["settings"] = await self.api.async_get_inverter_settings(
-                    self.serial, self.data.get("settings", {})
+                    self.serial, first=first, previous=self.data.get("settings", {})
                 )
         if self.type == "smart_device":
             if (self.update_count % 5) == 0:
@@ -78,7 +78,8 @@ class CloudCoordinator(DataUpdateCoordinator):
                 )
             self.data["point"] = await self.api.async_get_smart_device_data(self.serial)
         _LOGGER.info("Coordinator data Update for device {}".format(self.device_name))
-        self.update_count += 1
+        if not first:
+            self.update_count += 1
         return self.data
 
 
