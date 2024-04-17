@@ -298,7 +298,7 @@ class GECloudApiClient:
             data = await self.async_get_inverter_data(
                 endpoint, serial, setting_id, post, datain, uuid
             )
-            if data:
+            if data is not None:
                 break
             await asyncio.sleep(1 * (retry + 1))
         if data is None:
