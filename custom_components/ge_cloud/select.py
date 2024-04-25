@@ -17,6 +17,7 @@ from .const import (
     DOMAIN,
     DATA_ACCOUNT_COORDINATOR,
     DATA_SERIALS,
+    INTEGRATION_VERSION,
 )
 
 from homeassistant.components.select import (
@@ -142,6 +143,8 @@ class CloudSelect(CoordinatorEntity[CloudCoordinator], SelectEntity):
 
         self._attr_name = f"GE Inverter {serial} {description.name}"
         self._attr_key = f"ge_inverter_{serial}_{description.key}"
+        self.device_name = f"GE Inverter {serial}"
+        self.device_key = f"ge_inverter_{serial}"
         self._attr_device_class = description.device_class
         self._attr_unique_id = (
             f"{coordinator.account_id}_{serial}_{description.unique_id}"
@@ -153,6 +156,18 @@ class CloudSelect(CoordinatorEntity[CloudCoordinator], SelectEntity):
         self.options_value = options
         self.options_text = options_text
         self.write_value = write_value
+
+    @property
+    def device_info(self):
+        """
+        Return device info
+        """
+        return {
+            "identifiers": {(DOMAIN, self.device_key)},
+            "name": self.device_name,
+            "model": INTEGRATION_VERSION,
+            "manufacturer": "GivEnergy",
+        }
 
     @property
     def available(self) -> bool:

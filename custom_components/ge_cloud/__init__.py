@@ -12,23 +12,20 @@ from .api import GECloudApiClient
 from .coordinator import async_setup_cloud_coordinator
 
 from .const import (
-                CONFIG_ACCOUNT_ID,
-                CONFIG_MAIN_API_KEY,
-                DOMAIN, DATA_CLIENT,
-                CONFIG_KIND_ACCOUNT,
-                CONFIG_KIND,
-                DATA_ACCOUNT,
-                DATA_SERIALS,
-                DATA_SMART_DEVICES
-                )
+    CONFIG_ACCOUNT_ID,
+    CONFIG_MAIN_API_KEY,
+    DOMAIN,
+    DATA_CLIENT,
+    CONFIG_KIND_ACCOUNT,
+    CONFIG_KIND,
+    DATA_ACCOUNT,
+    DATA_SERIALS,
+    DATA_SMART_DEVICES,
+)
 
-ACCOUNT_PLATFORMS = [
-    "sensor",
-    "number",
-    "switch",
-    "select"
-]
+ACCOUNT_PLATFORMS = ["sensor", "number", "switch", "select"]
 _LOGGER = logging.getLogger(__name__)
+
 
 async def async_setup(hass: HomeAssistant, config):
     """
@@ -70,17 +67,27 @@ async def async_setup_dependencies(hass: HomeAssistant, config):
     hass.data[DOMAIN][account_id][DATA_SERIALS] = {}
     for serial in serials:
         hass.data[DOMAIN][account_id][DATA_SERIALS][serial] = {}
-        _LOGGER.info("Create Cloud coordinator for account {}".format(account_id, serial))
+        _LOGGER.info(
+            "Create Cloud coordinator for account {}".format(account_id, serial)
+        )
         await async_setup_cloud_coordinator(hass, account_id, serial, type="inverter")
 
     smart_devices = await client.async_get_smart_devices()
     _LOGGER.info("Got smart devices {}".format(smart_devices))
     for device in smart_devices:
-        uuid = device.get('uuid', None)
+        uuid = device.get("uuid", None)
         if uuid:
             hass.data[DOMAIN][account_id][DATA_SERIALS][uuid] = {}
-            _LOGGER.info("Create Cloud coordinator for account {}".format(account_id, serial))
-            await async_setup_cloud_coordinator(hass, account_id, uuid, type="smart_device", device_name=device.get('alias', None))
+            _LOGGER.info(
+                "Create Cloud coordinator for account {}".format(account_id, serial)
+            )
+            await async_setup_cloud_coordinator(
+                hass,
+                account_id,
+                uuid,
+                type="smart_device",
+                device_name=device.get("alias", None),
+            )
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

@@ -18,6 +18,7 @@ from .const import (
     DOMAIN,
     DATA_ACCOUNT_COORDINATOR,
     DATA_SERIALS,
+    INTEGRATION_VERSION,
 )
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -341,9 +342,13 @@ class CloudSensor(CoordinatorEntity[CloudCoordinator], SensorEntity):
         if coordinator.type == "smart_device":
             self._attr_key = f"ge_smart_{serial}_{description.key}"
             self._attr_name = f"GE Smart {device_name} {description.name}"
+            self.device_name = f"GE Smart {device_name}"
+            self.device_key = f"ge_smart_{serial}"
         else:
             self._attr_key = f"ge_inverter_{serial}_{description.key}"
             self._attr_name = f"GE Inverter {device_name} {description.name}"
+            self.device_name = f"GE Inverter {device_name}"
+            self.device_key = f"ge_inverter_{serial}"
         self._attr_state_class = description.state_class
         self._attr_device_class = description.device_class
         self._attr_unique_id = (
@@ -351,6 +356,18 @@ class CloudSensor(CoordinatorEntity[CloudCoordinator], SensorEntity):
         )
         self._attr_icon = description.icon
         self.serial = serial
+
+    @property
+    def device_info(self):
+        """
+        Return device info
+        """
+        return {
+            "identifiers": {(DOMAIN, self.device_key)},
+            "name": self.device_name,
+            "model": INTEGRATION_VERSION,
+            "manufacturer": "GivEnergy",
+        }
 
     @property
     def available(self) -> bool:

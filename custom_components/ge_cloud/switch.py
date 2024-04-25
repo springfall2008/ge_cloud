@@ -17,6 +17,7 @@ from .const import (
     DOMAIN,
     DATA_ACCOUNT_COORDINATOR,
     DATA_SERIALS,
+    INTEGRATION_VERSION,
 )
 
 from homeassistant.components.switch import (
@@ -111,7 +112,9 @@ class CloudSwitch(CoordinatorEntity[CloudCoordinator], SwitchEntity):
         self.entity_description = description
 
         self._attr_name = f"GE Inverter {serial} {description.name}"
+        self.device_name = f"GE Inverter {serial}"
         self._attr_key = f"ge_inverter_{serial}_{description.key}"
+        self.device_key = f"ge_inverter_{serial}"
         self._attr_device_class = description.device_class
         self._attr_unique_id = (
             f"{coordinator.account_id}_{serial}_{description.unique_id}"
@@ -119,6 +122,18 @@ class CloudSwitch(CoordinatorEntity[CloudCoordinator], SwitchEntity):
         self._attr_icon = description.icon
         self.reg_number = description.reg_number
         self.serial = serial
+
+    @property
+    def device_info(self):
+        """
+        Return device info
+        """
+        return {
+            "identifiers": {(DOMAIN, self.device_key)},
+            "name": self.device_name,
+            "model": INTEGRATION_VERSION,
+            "manufacturer": "GivEnergy",
+        }
 
     @property
     def available(self) -> bool:
