@@ -340,13 +340,13 @@ class CloudSensor(CoordinatorEntity[CloudCoordinator], SensorEntity):
         device_name = coordinator.device_name
 
         if coordinator.type == "smart_device":
-            self._attr_key = f"ge_smart_{serial}_{description.key}"
-            self._attr_name = f"GE Smart {device_name} {description.name}"
+            self._attr_key = f"{description.key}"
+            self._attr_name = f"{description.name}"
             self.device_name = f"GE Smart {device_name}"
             self.device_key = f"ge_smart_{serial}"
         else:
-            self._attr_key = f"ge_inverter_{serial}_{description.key}"
-            self._attr_name = f"GE Inverter {device_name} {description.name}"
+            self._attr_key = f"{description.key}"
+            self._attr_name = f"{description.name}"
             self.device_name = f"GE Inverter {device_name}"
             self.device_key = f"ge_inverter_{serial}"
         self._attr_state_class = description.state_class

@@ -20,7 +20,7 @@ import random
 
 _LOGGER = logging.getLogger(__name__)
 TIMEOUT = 240
-RETRIES = 10
+RETRIES = 5
 MAX_THREADS = 2
 
 

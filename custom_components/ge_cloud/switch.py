@@ -111,9 +111,9 @@ class CloudSwitch(CoordinatorEntity[CloudCoordinator], SwitchEntity):
         super().__init__(coordinator)
         self.entity_description = description
 
-        self._attr_name = f"GE Inverter {serial} {description.name}"
+        self._attr_name = f"{description.name}"
         self.device_name = f"GE Inverter {serial}"
-        self._attr_key = f"ge_inverter_{serial}_{description.key}"
+        self._attr_key = f"{description.key}"
         self.device_key = f"ge_inverter_{serial}"
         self._attr_device_class = description.device_class
         self._attr_unique_id = (
