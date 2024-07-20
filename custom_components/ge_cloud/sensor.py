@@ -296,7 +296,47 @@ SENSORS_SMART_DEVICE = (
         device_class=SensorDeviceClass.POWER,
     ),
 )
-
+SENSORS_EVC_DEVICE = (
+    CloudEntityDescription(
+        key="status",
+        name="Status",
+        unique_id="status",
+        icon="mdi:information",
+    ),
+    CloudEntityDescription(
+        key="voltage",
+        name="Voltage",
+        unique_id="voltage",
+        native_unit_of_measurement="V",
+        icon="mdi:transmission-tower",
+        device_class=SensorDeviceClass.VOLTAGE,
+    ),
+    CloudEntityDescription(
+        key="import_total",
+        name="Import Total",
+        unique_id="import_total",
+        native_unit_of_measurement="kWh",
+        icon="mdi:transmission-tower-import",
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+    ),
+    CloudEntityDescription(
+        key="import_power",
+        name="Import Power",
+        unique_id="import_power",
+        native_unit_of_measurement="W",
+        icon="mdi:home",
+        device_class=SensorDeviceClass.POWER,
+    ),
+    CloudEntityDescription(
+        key="import_current",
+        name="Import Current",
+        unique_id="import_current",
+        native_unit_of_measurement="A",
+        icon="mdi:transmission-tower",
+        device_class=SensorDeviceClass.CURRENT,
+    ),
+)
 
 async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities):
     """Setup sensors based on our entry"""
@@ -320,6 +360,8 @@ async def async_setup_default_sensors(
     ]
     if coordinator.type == "smart_device":
         sensors = SENSORS_SMART_DEVICE
+    elif coordinator.type == "evc_device":
+        sensors = SENSORS_EVC_DEVICE
     else:
         sensors = SENSORS_INVERTER
     _LOGGER.info(
@@ -344,7 +386,12 @@ class CloudSensor(CoordinatorEntity[CloudCoordinator], SensorEntity):
             self._attr_name = f"{description.name}"
             self.device_name = f"GE Smart {device_name}"
             self.device_key = f"ge_smart_{serial}"
-        else:
+        elif coordinator.type == "evc_device":
+            self._attr_key = f"{description.key}"
+            self._attr_name = f"{description.name}"
+            self.device_name = f"EVC {device_name}"
+            self.device_key = f"ge_evc_{serial}"
+        else: # Inverter
             self._attr_key = f"{description.key}"
             self._attr_name = f"{description.name}"
             self.device_name = f"GE Inverter {device_name}"
@@ -386,6 +433,16 @@ class CloudSensor(CoordinatorEntity[CloudCoordinator], SensorEntity):
                 "asset_id": smart_device.get("asset_id"),
                 "device_id": smart_device.get("hardware_id"),
             }
+        elif self.coordinator.type == "evc_device" and self._attr_key == "status":
+            evc = self.coordinator.data.get("evc_device", {})
+            return {
+                "serial": evc.get("serial_number"),
+                "uuid": evc.get("uuid"),
+                "type": evc.get("type"),
+                "alias": evc.get("alias"),
+                "online": evc.get("online"),
+                "went_offline_at": evc.get("went_offline_at")
+            }
         return None
 
     @property
@@ -401,6 +458,21 @@ class CloudSensor(CoordinatorEntity[CloudCoordinator], SensorEntity):
             smart_point = self.coordinator.data.get("point", {})
             if key == "power":
                 value = smart_point.get("power", None)
+        elif self.coordinator.type == "evc_device":
+            evc_device = self.coordinator.data.get("evc_device", {})
+            smart_point = self.coordinator.data.get("point", {})
+            if key == 'status':
+                value = evc_device.get("status", None)
+            elif key == "voltage":
+                value = smart_point.get("Voltage", None)
+            elif key == "import_total":
+                value = smart_point.get("Energy.Active.Import.Register", None)
+                if value:
+                    value = round(value / 1000.0, 2)
+            elif key == "import_power":
+                value = smart_point.get("Power.Active.Import", None)
+            elif key == "import_current":
+                value = smart_point.get("Current.Import", None)
         else:
             status = self.coordinator.data.get("status", {})
             meter = self.coordinator.data.get("meter", {})

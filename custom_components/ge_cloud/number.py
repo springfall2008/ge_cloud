@@ -19,6 +19,8 @@ from .const import (
     DATA_SERIALS,
     GE_REGISTER_BATTERY_CUTOFF_LIMIT,
     INTEGRATION_VERSION,
+    EVC_SELECT_VALUE_KEY,
+    EVC_COMMAND_NAMES
 )
 from homeassistant.components.number import (
     NumberEntity,
@@ -104,6 +106,30 @@ async def async_setup_default_numbers(
                     native_max_value=float(range_max),
                 )
                 cloud_numbers.append(CloudNumber(coordinator, description, serial))
+    elif coordinator.type == "evc_device":
+        for command in coordinator.data["commands"].keys():
+            device_class = None
+            command_data = coordinator.data["commands"][command]
+            if isinstance(command_data, dict) and command_data:
+                _LOGGER.info(f"Check for number in {command} {command_data}")
+
+                value = command_data.get('value', None)
+                range_min = command_data.get('min', None)
+                range_max = command_data.get('max', None)
+                native_unit_of_measurement = command_data.get('unit', None)
+                if range_min and range_max:
+                    description = CloudNumberEntityDescription(
+                        key=command,
+                        name=EVC_COMMAND_NAMES.get(command, command),
+                        unique_id=command,
+                        native_unit_of_measurement=native_unit_of_measurement,
+                        reg_number=command,
+                        device_class=device_class,
+                        native_min_value=float(range_min),
+                        native_max_value=float(range_max),
+                    )
+                    cloud_numbers.append(CloudNumber(coordinator, description, serial))
+
     if cloud_numbers:
         async_add_entities(cloud_numbers)
 
@@ -115,11 +141,24 @@ class CloudNumber(CoordinatorEntity[CloudCoordinator], NumberEntity):
     def __init__(self, coordinator, description, serial) -> None:
         super().__init__(coordinator)
         self.entity_description = description
+        device_name = coordinator.device_name
 
-        self._attr_name = f"{description.name}"
-        self._attr_key = f"{description.key}"
-        self.device_name = f"GE Inverter {serial}"
-        self.device_key = f"ge_inverter_{serial}"
+        if coordinator.type == "smart_device":
+            self._attr_key = f"{description.key}"
+            self._attr_name = f"{description.name}"
+            self.device_name = f"GE Smart {device_name}"
+            self.device_key = f"ge_smart_{serial}"
+        elif coordinator.type == "evc_device":
+            self._attr_key = f"{description.key}"
+            self._attr_name = f"{description.name}"
+            self.device_name = f"EVC {device_name}"
+            self.device_key = f"ge_evc_{serial}"
+        else:
+            self._attr_key = f"{description.key}"
+            self._attr_name = f"{description.name}"
+            self.device_name = f"GE Inverter {device_name}"
+            self.device_key = f"ge_inverter_{serial}"
+
         self._attr_device_class = description.device_class
         self._attr_unique_id = (
             f"{coordinator.account_id}_{serial}_{description.unique_id}"
@@ -155,10 +194,11 @@ class CloudNumber(CoordinatorEntity[CloudCoordinator], NumberEntity):
         key = self.entity_description.key
         reg_number = self.entity_description.reg_number
         value = 0.0
-        status = self.coordinator.data.get("status", {})
-        meter = self.coordinator.data.get("meter", {})
-        settings = self.coordinator.data.get("settings", {})
-        value = settings.get(reg_number, {}).get("value", None)
+        if self.coordinator.type == "evc_device":
+            value = self.coordinator.data["commands"].get(reg_number, {}).get("value", None)
+        else:
+            settings = self.coordinator.data.get("settings", {})
+            value = settings.get(reg_number, {}).get("value", None)
         return value
 
     @property
@@ -171,10 +211,21 @@ class CloudNumber(CoordinatorEntity[CloudCoordinator], NumberEntity):
         reg_number = self.entity_description.reg_number
         if value is not None:
             _LOGGER.info(f"Setting {key} number {reg_number} to {value}")
-            result = await self.coordinator.api.async_write_inverter_setting(
-                self.serial, reg_number, value
-            )
-            if result and ("value" in result):
-                value = result["value"]
-                self.coordinator.data["settings"][reg_number]["value"] = value
+            if self.coordinator.type == "evc_device":
+                result = await self.coordinator.api.async_send_evc_command(
+                    self.serial, reg_number, params = {EVC_SELECT_VALUE_KEY.get(reg_number, 'value') : value}
+                )
+                if result:
+                    self.coordinator.data["commands"][reg_number]["value"] = value
+                else:
+                    _LOGGER.warn(f"Failed to set {reg_number} to {value}")
+            else:
+                result = await self.coordinator.api.async_write_inverter_setting(
+                    self.serial, reg_number, value
+                )
+                if result and ("value" in result):
+                    value = result["value"]
+                    self.coordinator.data["settings"][reg_number]["value"] = value
+                else:
+                    _LOGGER.warn(f"Failed to set {reg_number} to {value}")
             self.async_write_ha_state()

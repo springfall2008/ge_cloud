@@ -20,7 +20,6 @@ from .const import (
     CONFIG_KIND,
     DATA_ACCOUNT,
     DATA_SERIALS,
-    DATA_SMART_DEVICES,
 )
 
 ACCOUNT_PLATFORMS = ["sensor", "number", "switch", "select"]
@@ -68,7 +67,9 @@ async def async_setup_dependencies(hass: HomeAssistant, config):
     for serial in serials:
         hass.data[DOMAIN][account_id][DATA_SERIALS][serial] = {}
         _LOGGER.info(
-            "Create Cloud coordinator for account {}".format(account_id, serial)
+            "Create Inverter Cloud coordinator for account {} serial {}".format(
+                account_id, serial
+            )
         )
         await async_setup_cloud_coordinator(hass, account_id, serial, type="inverter")
 
@@ -79,13 +80,34 @@ async def async_setup_dependencies(hass: HomeAssistant, config):
         if uuid:
             hass.data[DOMAIN][account_id][DATA_SERIALS][uuid] = {}
             _LOGGER.info(
-                "Create Cloud coordinator for account {}".format(account_id, serial)
+                "Create Smart Device Cloud coordinator for account {} UUID {}".format(
+                    account_id, uuid
+                )
             )
             await async_setup_cloud_coordinator(
                 hass,
                 account_id,
                 uuid,
                 type="smart_device",
+                device_name=device.get("alias", None),
+            )
+
+    evc_devices = await client.async_get_evc_devices()
+    _LOGGER.info("Got EVC devices {}".format(evc_devices))
+    for device in evc_devices:
+        uuid = device.get("uuid", None)
+        if uuid:
+            hass.data[DOMAIN][account_id][DATA_SERIALS][uuid] = {}
+            _LOGGER.info(
+                "Create EVC Cloud coordinator for account {} UUID {}".format(
+                    account_id, uuid
+                )
+            )
+            await async_setup_cloud_coordinator(
+                hass,
+                account_id,
+                uuid,
+                type="evc_device",
                 device_name=device.get("alias", None),
             )
 

@@ -18,6 +18,8 @@ from .const import (
     DATA_ACCOUNT_COORDINATOR,
     DATA_SERIALS,
     INTEGRATION_VERSION,
+    EVC_COMMAND_NAMES,
+    EVC_SELECT_VALUE_KEY
 )
 
 from homeassistant.components.select import (
@@ -123,6 +125,36 @@ async def async_setup_default_selects(
                         coordinator, description, serial, options, options_text, True
                     )
                 )
+    elif coordinator.type == "evc_device":
+        for command in coordinator.data["commands"].keys():
+            device_class = None
+            command_data = coordinator.data["commands"][command]
+            if isinstance(command_data, list) and command_data:
+                _LOGGER.info(f"Check for select in {command} {command_data}")
+                options = []
+                options_text = []
+                for option_entry in command_data:
+                    key = option_entry.get("key", None)
+                    title = option_entry.get("title", None)
+                    available = option_entry.get("available", True)
+                    if key and title and available:
+                        options.append(key)
+                        options_text.append(title)
+
+                if options:
+                    description = CloudSelectEntityDescription(
+                        key=command,
+                        name=EVC_COMMAND_NAMES.get(command, command),
+                        unique_id=command,
+                        reg_number=command,
+                        device_class=device_class,
+                    )
+                    cloud_selects.append(
+                        CloudSelect(
+                            coordinator, description, serial, options, options_text, True
+                        )
+                    )
+
     if cloud_selects:
         async_add_entities(cloud_selects)
 
@@ -140,11 +172,24 @@ class CloudSelect(CoordinatorEntity[CloudCoordinator], SelectEntity):
     ) -> None:
         super().__init__(coordinator)
         self.entity_description = description
+        device_name = coordinator.device_name
 
-        self._attr_name = f"{description.name}"
-        self._attr_key = f"{description.key}"
-        self.device_name = f"GE Inverter {serial}"
-        self.device_key = f"ge_inverter_{serial}"
+        if coordinator.type == "smart_device":
+            self._attr_key = f"{description.key}"
+            self._attr_name = f"{description.name}"
+            self.device_name = f"GE Smart {device_name}"
+            self.device_key = f"ge_smart_{serial}"
+        elif coordinator.type == "evc_device":
+            self._attr_key = f"{description.key}"
+            self._attr_name = f"{description.name}"
+            self.device_name = f"EVC {device_name}"
+            self.device_key = f"ge_evc_{serial}"
+        else:
+            self._attr_key = f"{description.key}"
+            self._attr_name = f"{description.name}"
+            self.device_name = f"GE Inverter {device_name}"
+            self.device_key = f"ge_inverter_{serial}"
+
         self._attr_device_class = description.device_class
         self._attr_unique_id = (
             f"{coordinator.account_id}_{serial}_{description.unique_id}"
@@ -188,7 +233,16 @@ class CloudSelect(CoordinatorEntity[CloudCoordinator], SelectEntity):
 
     @property
     def current_option(self) -> str:
-        option = self.coordinator.data["settings"][self.reg_number]["value"]
+        option = None
+        if self.coordinator.type == "evc_device":
+            command_data = self.coordinator.data["commands"][self.reg_number]
+            if isinstance(command_data, list) and command_data:
+                for option_entry in command_data:
+                    active = option_entry.get("active", False)
+                    if active:
+                        option = option_entry.get("title", None)
+        else:
+            option = self.coordinator.data["settings"][self.reg_number]["value"]
 
         idx = self.option_index(option)
         if idx >= 0:
@@ -201,7 +255,6 @@ class CloudSelect(CoordinatorEntity[CloudCoordinator], SelectEntity):
         key = self.entity_description.key
         reg_number = self.entity_description.reg_number
         if option is not None:
-            _LOGGER.info(f"Setting {key} number {reg_number} to {option}")
             idx = self.option_index(option)
             if idx >= 0:
                 if self.write_value:
@@ -209,18 +262,37 @@ class CloudSelect(CoordinatorEntity[CloudCoordinator], SelectEntity):
                 else:
                     option_value = self.options_text[idx]
 
-                result = await self.coordinator.api.async_write_inverter_setting(
-                    self.serial, reg_number, option_value
-                )
-                if result and ("value" in result):
-                    idx = self.option_index(result["value"])
-                    if idx >= 0:
-                        option = self.options_text[idx]
-                        self.coordinator.data["settings"][reg_number]["value"] = option
+                if self.coordinator.type == "evc_device":
+                    result = await self.coordinator.api.async_send_evc_command(
+                        self.serial, reg_number, params = {EVC_SELECT_VALUE_KEY.get(reg_number, 'value') : option_value}
+                    )
+                    _LOGGER.info(f"Setting {key} number {reg_number} to {option_value} result {result}")
+                    if result:
+                        command_data = self.coordinator.data["commands"][reg_number]
+                        for option_entry in command_data:
+                            if option_entry.get("key") == option_value:
+                                option_entry["active"] = True
+                            else:
+                                option_entry["active"] = False
                     else:
                         _LOGGER.warning(
-                            "WARN: Invalid option respone {} when writing selection to {}".format(
-                                result["value"], self._attr_key
+                            "WARN: Invalid option response {} when writing selection to {}".format(
+                                result, self._attr_key
                             )
                         )
+                else:
+                    result = await self.coordinator.api.async_write_inverter_setting(
+                        self.serial, reg_number, option_value
+                    )
+                    if result and ("value" in result):
+                        idx = self.option_index(result["value"])
+                        if idx >= 0:
+                            option = self.options_text[idx]
+                            self.coordinator.data["settings"][reg_number]["value"] = option
+                        else:
+                            _LOGGER.warning(
+                                "WARN: Invalid option response {} when writing selection to {}".format(
+                                    result["value"], self._attr_key
+                                )
+                            )
             self.async_write_ha_state()

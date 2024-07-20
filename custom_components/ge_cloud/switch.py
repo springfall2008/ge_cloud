@@ -18,6 +18,7 @@ from .const import (
     DATA_ACCOUNT_COORDINATOR,
     DATA_SERIALS,
     INTEGRATION_VERSION,
+    EVC_COMMAND_NAMES
 )
 
 from homeassistant.components.switch import (
@@ -76,7 +77,6 @@ async def async_setup_default_switches(
             value = coordinator.data["settings"][reg_id]["value"]
             validation_rules = coordinator.data["settings"][reg_id]["validation_rules"]
             device_class = None
-            native_unit_of_measurement = ""
             is_switch = False
             for validation_rule in validation_rules:
                 if validation_rule.startswith("boolean"):
@@ -95,6 +95,33 @@ async def async_setup_default_switches(
                     device_class=device_class,
                 )
                 cloud_switches.append(CloudSwitch(coordinator, description, serial))
+    elif coordinator.type == "evc_device":
+        for command in coordinator.data["commands"].keys():
+            device_class = None
+            command_data = coordinator.data["commands"][command]
+            _LOGGER.info(f"Check for switch in {command} {command_data}")
+            if isinstance(command_data, dict):
+                value = command_data.get("value", None)
+                if isinstance(value, bool):
+                    description = CloudSwitchEntityDescription(
+                        key=command,
+                        name=EVC_COMMAND_NAMES.get(command, command),
+                        unique_id=command,
+                        reg_number=command,
+                        device_class=device_class,
+                    )
+                    cloud_switches.append(CloudSwitch(coordinator, description, serial))
+            elif isinstance(command_data, list) and len(command_data)==0:
+                # Push button
+                description = CloudSwitchEntityDescription(
+                    key=command,
+                    name=EVC_COMMAND_NAMES.get(command, command),
+                    unique_id=command,
+                    reg_number=command,
+                    device_class=device_class,
+                )
+                cloud_switches.append(CloudSwitch(coordinator, description, serial))
+
     if cloud_switches:
         async_add_entities(cloud_switches)
 
@@ -110,11 +137,24 @@ class CloudSwitch(CoordinatorEntity[CloudCoordinator], SwitchEntity):
     def __init__(self, coordinator, description, serial) -> None:
         super().__init__(coordinator)
         self.entity_description = description
+        device_name = coordinator.device_name
 
-        self._attr_name = f"{description.name}"
-        self.device_name = f"GE Inverter {serial}"
-        self._attr_key = f"{description.key}"
-        self.device_key = f"ge_inverter_{serial}"
+        if coordinator.type == "smart_device":
+            self._attr_key = f"{description.key}"
+            self._attr_name = f"{description.name}"
+            self.device_name = f"GE Smart {device_name}"
+            self.device_key = f"ge_smart_{serial}"
+        elif coordinator.type == "evc_device":
+            self._attr_key = f"{description.key}"
+            self._attr_name = f"{description.name}"
+            self.device_name = f"EVC {device_name}"
+            self.device_key = f"ge_evc_{serial}"
+        else:
+            self._attr_key = f"{description.key}"
+            self._attr_name = f"{description.name}"
+            self.device_name = f"GE Inverter {device_name}"
+            self.device_key = f"ge_inverter_{serial}"
+
         self._attr_device_class = description.device_class
         self._attr_unique_id = (
             f"{coordinator.account_id}_{serial}_{description.unique_id}"
@@ -147,9 +187,17 @@ class CloudSwitch(CoordinatorEntity[CloudCoordinator], SwitchEntity):
         """
         Return true if the switch is on
         """
-        reg_number = self.entity_description.reg_number
-        settings = self.coordinator.data.get("settings", {})
-        value = settings.get(reg_number, {}).get("value", False)
+        if self.coordinator.type == "evc_device":
+            command = self.entity_description.reg_number
+            command_data = self.coordinator.data["commands"].get(command, {})
+            if isinstance(command_data, dict):
+                return command_data.get("value", None)
+            else:
+                return False
+        else:
+            reg_number = self.entity_description.reg_number
+            settings = self.coordinator.data.get("settings", {})
+            value = settings.get(reg_number, {}).get("value", False)
         return value
 
     async def async_turn_on(self, **kwargs: Any) -> None:
@@ -165,18 +213,30 @@ class CloudSwitch(CoordinatorEntity[CloudCoordinator], SwitchEntity):
         key = self.entity_description.key
         reg_number = self.entity_description.reg_number
         if value is not None:
-            validation_rules = self.coordinator.data["settings"][reg_number][
-                "validation_rules"
-            ]
-            if validation_rules:
-                for rule in validation_rules:
-                    if rule.startswith("exact:"):
-                        value = rule[6:]
-            _LOGGER.info(f"Setting {key} number {reg_number} to {value}")
-            result = await self.coordinator.api.async_write_inverter_setting(
-                self.serial, reg_number, value
-            )
-            if result and ("value" in result):
-                value = result["value"]
-                self.coordinator.data["settings"][reg_number]["value"] = value
+
+            if self.coordinator.type == "evc_device":
+                command_data = self.coordinator.data["commands"].get(reg_number, {})
+                if isinstance(command_data, dict):
+                    params = {'value' : value}
+                else:
+                    params = {}
+                result = await self.coordinator.api.async_send_evc_command(self.serial, reg_number, params=params)
+                _LOGGER.info(f"Setting {key} number {reg_number} setting {params} result {result}")
+                if result:
+                    self.coordinator.data["commands"][reg_number]["value"] = value
+            else:
+                validation_rules = self.coordinator.data["settings"][reg_number][
+                    "validation_rules"
+                ]
+                if validation_rules:
+                    for rule in validation_rules:
+                        if rule.startswith("exact:"):
+                            value = rule[6:]
+                _LOGGER.info(f"Setting {key} number {reg_number} to {value}")
+                result = await self.coordinator.api.async_write_inverter_setting(
+                    self.serial, reg_number, value
+                )
+                if result and ("value" in result):
+                    value = result["value"]
+                    self.coordinator.data["settings"][reg_number]["value"] = value
             self.async_write_ha_state()
