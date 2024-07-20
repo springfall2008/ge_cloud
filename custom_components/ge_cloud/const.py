@@ -2,7 +2,7 @@ import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
 
 DOMAIN = "ge_cloud"
-INTEGRATION_VERSION = "1.1.7"
+INTEGRATION_VERSION = "1.1.8"
 CONFIG_VERSION = 1
 
 CONFIG_KIND = "kind"
@@ -151,5 +151,11 @@ EVC_COMMAND_NAMES = {
     "enable-local-control": "Enable Local Control"
 }
 EVC_SELECT_VALUE_KEY = {
-    "change-mode" : "mode"
+    "change-mode" : "mode",
+    "adjust-charge-power-limit" : "limit",
+    "set-session-energy-limit" : "limit",
+    "change-randomised-delay-duration" : "delay"
 }
+
+# Unsupported commands
+EVC_BLACKLIST_COMMANDS = ["installation-mode", "perform-factory-reset", "rename-id-tag", "delete-id-tags", "change-randomised-delay-duration"]

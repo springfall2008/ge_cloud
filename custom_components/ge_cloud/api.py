@@ -18,7 +18,8 @@ from .const import (
     GE_API_EVC_COMMANDS,
     GE_API_EVC_COMMAND_DATA,
     GE_API_EVC_SEND_COMMAND,
-    GE_API_EVC_SESSIONS
+    GE_API_EVC_SESSIONS,
+    EVC_BLACKLIST_COMMANDS
 )
 
 import requests
@@ -307,10 +308,17 @@ class GECloudApiClient:
         """
         command_info = {}
         commands = await self.async_get_inverter_data_retry(GE_API_EVC_COMMANDS, uuid=uuid)
+        # Not desirable command
+        for command_drop in EVC_BLACKLIST_COMMANDS:
+            if command_drop in commands:
+                commands.remove(command_drop)
+
+        # Get command data
         for command in commands:
             command_data = await self.async_get_inverter_data_retry(GE_API_EVC_COMMAND_DATA, command=command, uuid=uuid)
             command_info[command] = command_data
             _LOGGER.info("Command {} data {}".format(command, command_data))
+
         return command_info
 
     async def async_get_evc_device(self, uuid):

@@ -118,6 +118,13 @@ async def async_setup_default_numbers(
                 range_max = command_data.get('max', None)
                 native_unit_of_measurement = command_data.get('unit', None)
                 if range_min and range_max:
+                    range_step = 1
+                    range_min = float(range_min)
+                    range_max = float(range_max)
+                    if range_min != round(range_min, 0):
+                        range_step = 0.1
+                    if range_max != round(range_max, 0):
+                        range_step = 0.1
                     description = CloudNumberEntityDescription(
                         key=command,
                         name=EVC_COMMAND_NAMES.get(command, command),
@@ -125,8 +132,9 @@ async def async_setup_default_numbers(
                         native_unit_of_measurement=native_unit_of_measurement,
                         reg_number=command,
                         device_class=device_class,
-                        native_min_value=float(range_min),
-                        native_max_value=float(range_max),
+                        native_min_value=range_min,
+                        native_max_value=range_max,
+                        native_step=range_step,
                     )
                     cloud_numbers.append(CloudNumber(coordinator, description, serial))
 
@@ -196,6 +204,9 @@ class CloudNumber(CoordinatorEntity[CloudCoordinator], NumberEntity):
         value = 0.0
         if self.coordinator.type == "evc_device":
             value = self.coordinator.data["commands"].get(reg_number, {}).get("value", None)
+            if reg_number=="set-session-energy-limit" and value is None:
+                value = self.coordinator.data["commands"].get(reg_number, {}).get("max", None)
+
         else:
             settings = self.coordinator.data.get("settings", {})
             value = settings.get(reg_number, {}).get("value", None)
@@ -212,9 +223,11 @@ class CloudNumber(CoordinatorEntity[CloudCoordinator], NumberEntity):
         if value is not None:
             _LOGGER.info(f"Setting {key} number {reg_number} to {value}")
             if self.coordinator.type == "evc_device":
-                result = await self.coordinator.api.async_send_evc_command(
-                    self.serial, reg_number, params = {EVC_SELECT_VALUE_KEY.get(reg_number, 'value') : value}
-                )
+                command_data = self.coordinator.data["commands"].get(reg_number, {})
+                params = {EVC_SELECT_VALUE_KEY.get(reg_number, 'value') : value}
+                #if reg_number == "set-session-energy-limit" and value == command_data.get('max', None):
+                #    params = {}
+                result = await self.coordinator.api.async_send_evc_command(self.serial, reg_number, params = params)
                 if result:
                     self.coordinator.data["commands"][reg_number]["value"] = value
                 else:
