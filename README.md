@@ -6,7 +6,10 @@ Enter the name of your account e.g. home (useful only if you have more than one)
 
 If all is working then the integration will create some sensors and update them once every minute (with register updates every 5 minutes)
 
-So far this has been tested on GE Gen1 inverters and GE EMS systems, but other systems should work.
+Supports:
+- Inverters including Gen1/Gen2/EMS/AOI
+- Smart Plugs (but not very good, you can't actually toggle the switch via cloud as they don't support it). Will give you the local key for Tuya Local.
+- Home Charger (EVC) - Basic support with monitoring and some controls (e.g. modes, charge power, stop/start etc).
 
 For support please raise a Github ticket.
 
