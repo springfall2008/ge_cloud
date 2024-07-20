@@ -83,6 +83,8 @@ class CloudCoordinator(DataUpdateCoordinator):
             self.data["point"] = await self.api.async_get_evc_device_data(self.serial)
             if (self.update_count % 5) == 0:
                 self.data["commands"] = await self.api.async_get_evc_commands(self.serial)
+            if (self.update_count % 10) == 0:
+                self.data["sessions"] = await self.api.async_get_evc_sessions(self.serial)
 
         _LOGGER.info("Coordinator data Update for device {}".format(self.device_name))
         if not first:

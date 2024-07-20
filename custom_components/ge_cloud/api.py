@@ -17,7 +17,8 @@ from .const import (
     GE_API_EVC_DEVICE_DATA,
     GE_API_EVC_COMMANDS,
     GE_API_EVC_COMMAND_DATA,
-    GE_API_EVC_SEND_COMMAND
+    GE_API_EVC_SEND_COMMAND,
+    GE_API_EVC_SESSIONS
 )
 
 import requests
@@ -227,6 +228,21 @@ class GECloudApiClient:
             _LOGGER.info("Smart device point {}".format(point))
             return point
         return {}
+
+    async def async_get_evc_sessions(self, uuid):
+        """
+        Get list of EVC sessions
+        """
+        now = datetime.now()
+        start = now - timedelta(hours=24)
+        start_time=start.strftime("%Y-%m-%dT%H:%M:%SZ")
+        end_time=now.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        data = await self.async_get_inverter_data_retry(GE_API_EVC_SESSIONS, uuid=uuid, start_time=start_time, end_time=end_time)
+        if isinstance(data, list):
+            _LOGGER.info("EVC sessions {}".format(data))
+            return data
+        return None
 
     async def async_get_evc_device_data(self, uuid):
         """

@@ -2,7 +2,7 @@ import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
 
 DOMAIN = "ge_cloud"
-INTEGRATION_VERSION = "1.1.6"
+INTEGRATION_VERSION = "1.1.7"
 CONFIG_VERSION = 1
 
 CONFIG_KIND = "kind"
@@ -42,6 +42,7 @@ GE_API_EVC_DEVICE_DATA = "ev-charger/{uuid}/meter-data?start_time={start_time}&e
 GE_API_EVC_COMMANDS = "ev-charger/{uuid}/commands"
 GE_API_EVC_COMMAND_DATA = "ev-charger/{uuid}/commands/{command}"
 GE_API_EVC_SEND_COMMAND = "ev-charger/{uuid}/commands/{command}"
+GE_API_EVC_SESSIONS = "ev-charger/{uuid}/charging-sessions?start_time={start_time}&end_time={end_time}&pageSize=32"
 
 GE_REGISTER_BATTERY_CUTOFF_LIMIT = 75
 

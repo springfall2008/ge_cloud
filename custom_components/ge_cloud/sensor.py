@@ -304,6 +304,14 @@ SENSORS_EVC_DEVICE = (
         icon="mdi:information",
     ),
     CloudEntityDescription(
+        key="last_session",
+        name="Last Session",
+        unique_id="last_session",
+        native_unit_of_measurement="kWh",
+        icon="mdi:transmission-tower-import",
+        device_class=SensorDeviceClass.ENERGY,
+    ),
+    CloudEntityDescription(
         key="voltage",
         name="Voltage",
         unique_id="voltage",
@@ -443,6 +451,39 @@ class CloudSensor(CoordinatorEntity[CloudCoordinator], SensorEntity):
                 "online": evc.get("online"),
                 "went_offline_at": evc.get("went_offline_at")
             }
+        elif self.coordinator.type == "evc_device" and self._attr_key == "last_session":
+            sessions = self.coordinator.data.get("sessions", [])
+            session = {}
+            consumption_24h = 0
+            meter_start = None
+            meter_stop = None
+            consumption = 0
+
+            if sessions:
+                for session in sessions:
+                    try:
+                        meter_start = float(session.get("meter_start", 0)) / 1000.0
+                    except ValueError:
+                        pass
+                    try:
+                        meter_stop = float(session.get("meter_stop", 0)) / 1000.0
+                    except ValueError:
+                        pass
+                    consumption = float(meter_stop) - float(meter_start)
+                    consumption_24h += consumption
+
+            return {
+                "started_by": session.get("started_by", None),
+                "meter_start": meter_start,
+                "started_at": session.get("started_at", None),
+                "stopped_by": session.get("stopped_by", None),
+                "meter_stop": meter_stop,
+                "stopped_at": session.get("stopped_at", None),
+                "stop_reason": session.get("stop_reason", None),
+                "consumption": consumption,
+                "consumption_24h": consumption_24h,
+                "sessions_24h": str(sessions)
+            }
         return None
 
     @property
@@ -463,6 +504,23 @@ class CloudSensor(CoordinatorEntity[CloudCoordinator], SensorEntity):
             smart_point = self.coordinator.data.get("point", {})
             if key == 'status':
                 value = evc_device.get("status", None)
+            elif key == 'last_session':
+                sessions = self.coordinator.data.get("sessions", [])
+                session = {}
+                consumption = None
+                if sessions:
+                    session = sessions[-1]
+                try:
+                    meter_start = float(session.get("meter_start", None)) / 1000.0
+                except ValueError:
+                    meter_start = None
+                try:
+                    meter_stop = float(session.get("meter_stop", None)) / 1000.0
+                except ValueError:
+                    meter_stop = None
+                if meter_start and meter_stop:
+                    consumption = round(float(meter_stop) - float(meter_start), 2)
+                value = consumption
             elif key == "voltage":
                 value = smart_point.get("Voltage", None)
             elif key == "import_total":
