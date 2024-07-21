@@ -18,7 +18,8 @@ from .const import (
     DATA_ACCOUNT_COORDINATOR,
     DATA_SERIALS,
     INTEGRATION_VERSION,
-    EVC_COMMAND_NAMES
+    EVC_COMMAND_NAMES,
+    EVC_SELECT_VALUE_KEY
 )
 
 from homeassistant.components.switch import (
@@ -217,12 +218,12 @@ class CloudSwitch(CoordinatorEntity[CloudCoordinator], SwitchEntity):
             if self.coordinator.type == "evc_device":
                 command_data = self.coordinator.data["commands"].get(reg_number, {})
                 if isinstance(command_data, dict):
-                    params = {'value' : value}
+                    params = {EVC_SELECT_VALUE_KEY.get(reg_number, 'value') : value}
                 else:
                     params = {}
                 result = await self.coordinator.api.async_send_evc_command(self.serial, reg_number, params=params)
-                _LOGGER.info(f"Setting {key} number {reg_number} setting {params} result {result}")
-                if result:
+                _LOGGER.info(f"Setting {key} number {reg_number} command_data {command_data} setting {params} result {result}")
+                if result and isinstance(command_data, dict):
                     self.coordinator.data["commands"][reg_number]["value"] = value
             else:
                 validation_rules = self.coordinator.data["settings"][reg_number][

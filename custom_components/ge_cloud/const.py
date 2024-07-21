@@ -2,7 +2,7 @@ import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
 
 DOMAIN = "ge_cloud"
-INTEGRATION_VERSION = "1.1.8"
+INTEGRATION_VERSION = "1.1.9"
 CONFIG_VERSION = 1
 
 CONFIG_KIND = "kind"
@@ -154,7 +154,8 @@ EVC_SELECT_VALUE_KEY = {
     "change-mode" : "mode",
     "adjust-charge-power-limit" : "limit",
     "set-session-energy-limit" : "limit",
-    "change-randomised-delay-duration" : "delay"
+    "change-randomised-delay-duration" : "delay",
+    "set-plug-and-go" : "enabled",
 }
 
 # Unsupported commands

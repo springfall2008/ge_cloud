@@ -235,7 +235,8 @@ class CloudSelect(CoordinatorEntity[CloudCoordinator], SelectEntity):
     def current_option(self) -> str:
         option = None
         if self.coordinator.type == "evc_device":
-            command_data = self.coordinator.data["commands"][self.reg_number]
+            reg_number = self.reg_number
+            command_data = self.coordinator.data["commands"][reg_number]
             if isinstance(command_data, list) and command_data:
                 for option_entry in command_data:
                     active = option_entry.get("active", False)
