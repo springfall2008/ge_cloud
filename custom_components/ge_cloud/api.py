@@ -29,6 +29,7 @@ import logging
 import random
 from datetime import datetime
 from datetime import timedelta
+from datetime import timezone
 
 _LOGGER = logging.getLogger(__name__)
 TIMEOUT = 240
@@ -234,7 +235,7 @@ class GECloudApiClient:
         """
         Get list of EVC sessions
         """
-        now = datetime.now()
+        now = datetime.now(timezone.utc)
         start = now - timedelta(hours=24)
         start_time=start.strftime("%Y-%m-%dT%H:%M:%SZ")
         end_time=now.strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -249,8 +250,8 @@ class GECloudApiClient:
         """
         Get smart device data points
         """
-        now = datetime.now()
-        start = now - timedelta(minutes=5)
+        now = datetime.now(timezone.utc)
+        start = now - timedelta(minutes=10)
         start_time=start.strftime("%Y-%m-%dT%H:%M:%SZ")
         end_time=now.strftime("%Y-%m-%dT%H:%M:%SZ")
 
@@ -266,7 +267,7 @@ class GECloudApiClient:
             if meter_id == EVC_METER_CHARGER:
                 for point in meter.get("measurements", []):
                     measurand = point.get("measurand", None)
-                    if measurand and measurand in EVC_DATA_POINTS:
+                    if (measurand is not None) and measurand in EVC_DATA_POINTS:
                         value = point.get("value", None)
                         unit = point.get("unit", None)
                         result[EVC_DATA_POINTS[measurand]] = value

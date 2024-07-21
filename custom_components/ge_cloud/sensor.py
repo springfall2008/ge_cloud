@@ -455,35 +455,35 @@ class CloudSensor(CoordinatorEntity[CloudCoordinator], SensorEntity):
             sessions = self.coordinator.data.get("sessions", [])
             smart_point = self.coordinator.data.get("point", {})
             session = {}
-            consumption_24h = 0
-            meter_start = None
-            meter_stop = None
             consumption = 0
+            consumption_24h = 0
 
             if sessions:
                 for session in sessions:
-                    try:
-                        meter_start = float(session.get("meter_start", 0)) / 1000.0
-                    except (ValueError, TypeError):
-                        pass
-                    try:
-                        if session.get("meter_stop", None) is None:
+                    meter_start = session.get("meter_start", None)
+                    meter_stop = session.get("meter_stop", None)
+
+                    if meter_start is not None:
+                        if meter_stop is None:
                             meter_stop = smart_point.get("Energy.Active.Import.Register", meter_start)
-                        else:
-                            meter_stop = session.get("meter_stop", None)
+
+                    try:
+                        meter_start = float(meter_start) / 1000.0
                         meter_stop = float(meter_stop) / 1000.0
                     except (ValueError, TypeError):
                         pass
-                    consumption = float(meter_stop) - float(meter_start)
-                    consumption_24h += consumption
+
+                    if isinstance(meter_start, float) and isinstance(meter_stop, float):
+                        consumption = float(meter_stop) - float(meter_start)
+                        consumption_24h += consumption
 
             return {
                 "started_by": session.get("started_by", None),
-                "meter_start": meter_start,
                 "started_at": session.get("started_at", None),
+                "meter_start": session.get("meter_start", None),
                 "stopped_by": session.get("stopped_by", None),
-                "meter_stop": meter_stop,
                 "stopped_at": session.get("stopped_at", None),
+                "meter_stop": session.get("meter_stop", None),
                 "stop_reason": session.get("stop_reason", None),
                 "consumption": consumption,
                 "consumption_24h": consumption_24h,
@@ -507,31 +507,33 @@ class CloudSensor(CoordinatorEntity[CloudCoordinator], SensorEntity):
         elif self.coordinator.type == "evc_device":
             evc_device = self.coordinator.data.get("evc_device", {})
             smart_point = self.coordinator.data.get("point", {})
+
             if key == 'status':
                 value = evc_device.get("status", None)
             elif key == 'last_session':
                 sessions = self.coordinator.data.get("sessions", [])
-                smart_point = self.coordinator.data.get("point", {})
                 session = {}
                 consumption = 0
                 meter_start = None
                 meter_stop = None
                 if sessions:
                     session = sessions[-1]
-                    try:
-                        meter_start = float(session.get("meter_start", 0)) / 1000.0
-                    except (ValueError, TypeError):
-                        pass
-                    try:
-                        if session.get("meter_stop", None) is None:
+                    meter_start = session.get("meter_start", None)
+                    meter_stop = session.get("meter_stop", None)
+
+                    if meter_start is not None:
+                        if meter_stop is None:
                             meter_stop = smart_point.get("Energy.Active.Import.Register", meter_start)
-                        else:
-                            meter_stop = session.get("meter_stop", None)
+
+                    try:
+                        meter_start = float(meter_start) / 1000.0
                         meter_stop = float(meter_stop) / 1000.0
                     except (ValueError, TypeError):
                         pass
-                if meter_start and meter_stop:
+
+                if isinstance(meter_start, float) and isinstance(meter_stop, float):
                     consumption = round(float(meter_stop) - float(meter_start), 2)
+
                 value = consumption
             elif key == "voltage":
                 value = smart_point.get("Voltage", None)
