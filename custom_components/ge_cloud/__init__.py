@@ -20,6 +20,10 @@ from .const import (
     CONFIG_KIND,
     DATA_ACCOUNT,
     DATA_SERIALS,
+    CONFIG_INVERTER_ENABLE,
+    CONFIG_SMART_DEVICE_ENABLE,
+    CONFIG_EVC_ENABLE,
+    CONFIG_POLL_INVERTER,
 )
 
 ACCOUNT_PLATFORMS = ["sensor", "number", "switch", "select"]
@@ -57,59 +61,67 @@ async def async_setup_dependencies(hass: HomeAssistant, config):
     """Setup the coordinator and api client which will be shared by various entities"""
     account_id = config[CONFIG_ACCOUNT_ID]
     api_key = config[CONFIG_MAIN_API_KEY]
+    inverter_enable = config.get(CONFIG_INVERTER_ENABLE, True)
+    smart_device_enable = config.get(CONFIG_SMART_DEVICE_ENABLE)
+    evc_enable = config.get(CONFIG_EVC_ENABLE)
+    poll_inverter = config.get(CONFIG_POLL_INVERTER)
 
     _LOGGER.info("Create API Client for account {}".format(account_id))
     client = GECloudApiClient(account_id, api_key)
     hass.data[DOMAIN][account_id][DATA_CLIENT] = client
-    serials = await client.async_get_devices()
-    _LOGGER.info("Got serials {}".format(serials))
     hass.data[DOMAIN][account_id][DATA_SERIALS] = {}
-    for serial in serials:
-        hass.data[DOMAIN][account_id][DATA_SERIALS][serial] = {}
-        _LOGGER.info(
-            "Create Inverter Cloud coordinator for account {} serial {}".format(
-                account_id, serial
-            )
-        )
-        await async_setup_cloud_coordinator(hass, account_id, serial, type="inverter")
 
-    smart_devices = await client.async_get_smart_devices()
-    _LOGGER.info("Got smart devices {}".format(smart_devices))
-    for device in smart_devices:
-        uuid = device.get("uuid", None)
-        if uuid:
-            hass.data[DOMAIN][account_id][DATA_SERIALS][uuid] = {}
+    if inverter_enable:
+        serials = await client.async_get_devices()
+        _LOGGER.info("Got inverter serials {}".format(serials))
+        for serial in serials:
+            hass.data[DOMAIN][account_id][DATA_SERIALS][serial] = {}
             _LOGGER.info(
-                "Create Smart Device Cloud coordinator for account {} UUID {}".format(
-                    account_id, uuid
+                "Create Inverter Cloud coordinator for account {} serial {}".format(
+                    account_id, serial
                 )
             )
-            await async_setup_cloud_coordinator(
-                hass,
-                account_id,
-                uuid,
-                type="smart_device",
-                device_name=device.get("alias", None),
-            )
+            await async_setup_cloud_coordinator(hass, account_id, serial, type="inverter", polling=poll_inverter)
 
-    evc_devices = await client.async_get_evc_devices()
-    _LOGGER.info("Got EVC devices {}".format(evc_devices))
-    for device in evc_devices:
-        uuid = device.get("uuid", None)
-        if uuid:
-            hass.data[DOMAIN][account_id][DATA_SERIALS][uuid] = {}
-            _LOGGER.info(
-                "Create EVC Cloud coordinator for account {} UUID {}".format(
-                    account_id, uuid
+    if smart_device_enable:
+        smart_devices = await client.async_get_smart_devices()
+        _LOGGER.info("Got smart devices {}".format(smart_devices))
+        for device in smart_devices:
+            uuid = device.get("uuid", None)
+            if uuid:
+                hass.data[DOMAIN][account_id][DATA_SERIALS][uuid] = {}
+                _LOGGER.info(
+                    "Create Smart Device Cloud coordinator for account {} UUID {}".format(
+                        account_id, uuid
+                    )
                 )
-            )
-            await async_setup_cloud_coordinator(
-                hass,
-                account_id,
-                uuid,
-                type="evc_device",
-                device_name=device.get("alias", None),
-            )
+                await async_setup_cloud_coordinator(
+                    hass,
+                    account_id,
+                    uuid,
+                    type="smart_device",
+                    device_name=device.get("alias", None),
+                )
+
+    if evc_enable:
+        evc_devices = await client.async_get_evc_devices()
+        _LOGGER.info("Got EVC devices {}".format(evc_devices))
+        for device in evc_devices:
+            uuid = device.get("uuid", None)
+            if uuid:
+                hass.data[DOMAIN][account_id][DATA_SERIALS][uuid] = {}
+                _LOGGER.info(
+                    "Create EVC Cloud coordinator for account {} UUID {}".format(
+                        account_id, uuid
+                    )
+                )
+                await async_setup_cloud_coordinator(
+                    hass,
+                    account_id,
+                    uuid,
+                    type="evc_device",
+                    device_name=device.get("alias", None),
+                )
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

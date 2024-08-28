@@ -26,7 +26,7 @@ class CloudCoordinator(DataUpdateCoordinator):
     """My custom coordinator."""
 
     def __init__(
-        self, hass, account_id, serial, api, type="inverter", device_name=None
+        self, hass, account_id, serial, api, type="inverter", device_name=None, polling=True
     ):
         """Initialize my coordinator."""
         super().__init__(
@@ -44,6 +44,12 @@ class CloudCoordinator(DataUpdateCoordinator):
         self.type = type
         self.data = {}
         self.update_count = 0
+
+        if serial.startswith("EMS"):
+            _LOGGER.info("Setting up EMS {}, will always poll".format(serial))
+            self.polling = True
+        else:
+            self.polling = polling
 
         if device_name:
             self.device_name = device_name
@@ -66,13 +72,15 @@ class CloudCoordinator(DataUpdateCoordinator):
             self.data["info"] = await self.api.async_get_device_info(self.serial)
             self.data["status"] = await self.api.async_get_inverter_status(self.serial)
             self.data["meter"] = await self.api.async_get_inverter_meter(self.serial)
+
             # Update registers every 5 minutes, other data every minute
-            if (self.update_count % 5) == 0:
+            if first or (self.update_count == 0) or (self.polling and (self.update_count % 5) == 0):
                 self.data["settings"] = await self.api.async_get_inverter_settings(
                     self.serial, first=first, previous=self.data.get("settings", {})
                 )
+
         if self.type == "smart_device":
-            if (self.update_count % 5) == 0:
+            if first or (self.update_count == 0) or (self.polling and (self.update_count % 5) == 0):
                 self.data["smart_device"] = await self.api.async_get_smart_device(
                     self.serial
                 )
@@ -81,9 +89,11 @@ class CloudCoordinator(DataUpdateCoordinator):
         if self.type == "evc_device":
             self.data["evc_device"] = await self.api.async_get_evc_device(self.serial)
             self.data["point"] = await self.api.async_get_evc_device_data(self.serial)
-            if (self.update_count % 10) == 0:
+
+            if first or (self.update_count == 0) or (self.polling and (self.update_count % 10) == 0):
                 self.data["sessions"] = await self.api.async_get_evc_sessions(self.serial)
-            if (self.update_count % 5) == 0:
+
+            if first or (self.update_count == 0) or (self.polling and (self.update_count % 5) == 0):
                 self.data["commands"] = await self.api.async_get_evc_commands(self.serial)
 
         _LOGGER.info("Coordinator data Update for device {}".format(self.device_name))
@@ -93,7 +103,7 @@ class CloudCoordinator(DataUpdateCoordinator):
 
 
 async def async_setup_cloud_coordinator(
-    hass, account_id: str, serial, type="inverter", device_name=None
+    hass, account_id: str, serial, type="inverter", device_name=None, polling=True
 ):
     hass.data[DOMAIN][account_id][DATA_SERIALS][serial][DATA_ACCOUNT_COORDINATOR] = (
         CloudCoordinator(
@@ -103,6 +113,7 @@ async def async_setup_cloud_coordinator(
             hass.data[DOMAIN][account_id][DATA_CLIENT],
             type=type,
             device_name=device_name,
+            polling=polling,
         )
     )
     _LOGGER.info(

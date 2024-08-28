@@ -59,7 +59,7 @@ class GECloudApiClient:
                 datain=params,
             )
             _LOGGER.info(
-                "Write comamnd {} params {} returns {}".format(
+                "Write EVC comamnd {} params {} returns {}".format(
                     command, params, data
                 )
             )
@@ -71,7 +71,7 @@ class GECloudApiClient:
             await asyncio.sleep(1 * (retry + 1))
         if data is None:
             _LOGGER.error(
-                "Failed to send command {} params {}".format(command, params)
+                "Failed to send EVC command {} params {}".format(command, params)
             )
         return data
 
@@ -94,7 +94,7 @@ class GECloudApiClient:
                 break
             await asyncio.sleep(1 * (retry + 1))
         if data is None:
-            _LOGGER.warning("Failed to read setting id {}".format(setting_id))
+            _LOGGER.warning("Failed to read inverter setting id {}".format(setting_id))
         return data
 
     async def async_write_inverter_setting(self, serial, setting_id, value):
@@ -110,7 +110,7 @@ class GECloudApiClient:
                 datain={"value": str(value), "context": "homeassistant"},
             )
             _LOGGER.info(
-                "Write setting id {} value {} returns {}".format(
+                "Write inverter setting id {} value {} returns {}".format(
                     setting_id, value, data
                 )
             )
@@ -135,7 +135,7 @@ class GECloudApiClient:
                 GE_API_INVERTER_SETTINGS, serial
             )
             _LOGGER.info(
-                "Register list for serial {} is {}".format(
+                "Register list for inverter serial {} is {}".format(
                     serial, self.register_list[serial]
                 )
             )
@@ -407,7 +407,7 @@ class GECloudApiClient:
                     if this_serial and this_serial == serial:
                         _LOGGER.info("Got device {} info {}".format(serial, inverter))
                         return inverter
-        return None
+        return {}
 
     async def async_get_devices(self):
         """
@@ -424,7 +424,7 @@ class GECloudApiClient:
                     _LOGGER.info("Got inverter {}".format(inverter))
                     serial = inverter.get("serial", None)
                     if serial:
-                        _LOGGER.info("Got serial {}".format(serial))
+                        _LOGGER.info("Got inverter serial {}".format(serial))
                         serials.append(serial)
 
         return serials

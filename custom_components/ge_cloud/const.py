@@ -2,8 +2,8 @@ import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
 
 DOMAIN = "ge_cloud"
-INTEGRATION_VERSION = "1.1.11"
-CONFIG_VERSION = 1
+INTEGRATION_VERSION = "1.1.12"
+CONFIG_VERSION = 2
 
 CONFIG_KIND = "kind"
 CONFIG_KIND_ACCOUNT = "account"
@@ -15,10 +15,18 @@ DATA_SERIALS = "SERIALS"
 DATA_ACCOUNT_COORDINATOR = "ACCOUNT_COORDINATOR"
 CONFIG_MAIN_API_KEY = "api_key"
 CONFIG_ACCOUNT_ID = "account_id"
+CONFIG_INVERTER_ENABLE = "inverter_enable"
+CONFIG_SMART_DEVICE_ENABLE = "device_enable"
+CONFIG_EVC_ENABLE = "evc_enable"
+CONFIG_POLL_INVERTER = "poll_inverter"
 
 DATA_SCHEMA_ACCOUNT = {
     vol.Required(CONFIG_ACCOUNT_ID, default="home"): str,
     vol.Required(CONFIG_MAIN_API_KEY, default="api_key"): str,
+    vol.Required(CONFIG_INVERTER_ENABLE, default=True): bool,
+    vol.Required(CONFIG_SMART_DEVICE_ENABLE, default=True): bool,
+    vol.Required(CONFIG_EVC_ENABLE, default=True): bool,
+    vol.Required(CONFIG_POLL_INVERTER, default=True): bool,
 }
 
 GE_API_URL = "https://api.givenergy.cloud/v1/"

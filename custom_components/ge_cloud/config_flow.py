@@ -19,6 +19,10 @@ from .const import (
     CONFIG_KIND_ACCOUNT,
     DATA_SCHEMA_ACCOUNT,
     CONFIG_ACCOUNT_ID,
+    CONFIG_INVERTER_ENABLE,
+    CONFIG_SMART_DEVICE_ENABLE,
+    CONFIG_EVC_ENABLE,
+    CONFIG_POLL_INVERTER,
 )
 from .api import GECloudApiClient
 
@@ -35,15 +39,30 @@ async def async_validate_main_config(data):
 
     account_id = data[CONFIG_ACCOUNT_ID]
     api_key = data[CONFIG_MAIN_API_KEY]
+    inverter_enable = data[CONFIG_INVERTER_ENABLE]
+    smart_device_enable = data[CONFIG_SMART_DEVICE_ENABLE]
+    evc_enable = data[CONFIG_EVC_ENABLE]
+    poll_inverter = data[CONFIG_POLL_INVERTER]
     _LOGGER.info(
         "Validating main config for account {} api_key {}".format(account_id, api_key)
     )
     api = GECloudApiClient(account_id, api_key)
-    serials = await api.async_get_devices()
-    _LOGGER.info("Got serials {}".format(serials))
-    if serials is None:
-        errors[CONFIG_MAIN_API_KEY] = "invalid_api_key"
+    inverter_serials = []
+    smart_devices = []
+    evc_devices = []
 
+    if inverter_enable:
+        inverter_serials = await api.async_get_devices()
+        _LOGGER.info("Got inverter serials {}".format(inverter_serials))
+    if smart_device_enable:
+        smart_devices = await api.async_get_smart_devices()
+        _LOGGER.info("Got smart devices {}".format(smart_devices))
+    if evc_enable:
+        evc_devices = await api.async_get_evc_devices()
+        _LOGGER.info("Got evc_devices {}".format(evc_devices))
+
+    if not inverter_serials and not smart_devices and not evc_devices:
+        errors[CONFIG_MAIN_API_KEY] = "invalid_api_key"
     return errors
 
 

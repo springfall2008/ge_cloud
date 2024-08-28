@@ -8,11 +8,18 @@
                 "data": {
                     "account_id": "Your account ID",
                     "api_key": "Your Api key",
-                    "other": "Other"
+                    "inverter_enable": "Scan for Inverters",
+                    "device_enable": "Scan for Smart Devices",
+                    "evc_enable": "Scan for EVC Devices",
+                    "poll_inverter": "Enable Inverter Polling (every 5 minutes)"
                 },
                 "data_description": {
                     "account_id": "Any identifier for your account (in case you have more than one)",
-                    "api_key": "This can be found in the GE Cloud portal under API Key"
+                    "api_key": "This can be found in the GE Cloud portal under API Key",
+                    "inverter_enable": "Enable to scan for inverters",
+                    "device_enable": "Enable to scan for Smart Devices",
+                    "evc_enable": "Enable to scan for EVC Devices",
+                    "poll_inverter": "Enable polling for normal use, disable for EMC setup"
                 }
             }
         }
