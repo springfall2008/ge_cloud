@@ -32,4 +32,4 @@ If you want to buy me a beer then please use Paypal - [tdlj@tdlj.net](mailto:tdl
 - Go to Integrations, click add and select 'GE Cloud'.
 - Enter a name for your Setup (e.g. Home) and your API key (create an API key inside Security settings on the GE Cloud web site)
 - If you only want to see one of the device types uncheck the others, otherwise leave them all enabled (if you don't have a device type that's okay)
-- Uncheck polling if you have an EMC, otherwise leave it set.
+- Uncheck polling if you have an EMS, otherwise leave it set.
