@@ -177,7 +177,7 @@ SENSORS_INVERTER = (
         native_unit_of_measurement="kWh",
         icon="mdi:solar-panel-large",
         device_class=SensorDeviceClass.ENERGY,
-        state_class=SensorStateClass.TOTAL_INCREASING,
+        state_class=SensorStateClass.TOTAL,
     ),
     CloudEntityDescription(
         key="grid_import_today",
@@ -186,7 +186,7 @@ SENSORS_INVERTER = (
         native_unit_of_measurement="kWh",
         icon="mdi:transmission-tower-import",
         device_class=SensorDeviceClass.ENERGY,
-        state_class=SensorStateClass.TOTAL_INCREASING,
+        state_class=SensorStateClass.TOTAL,
     ),
     CloudEntityDescription(
         key="grid_export_today",
@@ -195,7 +195,7 @@ SENSORS_INVERTER = (
         native_unit_of_measurement="kWh",
         icon="mdi:transmission-tower-export",
         device_class=SensorDeviceClass.ENERGY,
-        state_class=SensorStateClass.TOTAL_INCREASING,
+        state_class=SensorStateClass.TOTAL,
     ),
     CloudEntityDescription(
         key="consumption_today",
@@ -204,7 +204,7 @@ SENSORS_INVERTER = (
         native_unit_of_measurement="kWh",
         icon="mdi:home",
         device_class=SensorDeviceClass.ENERGY,
-        state_class=SensorStateClass.TOTAL_INCREASING,
+        state_class=SensorStateClass.TOTAL,
     ),
     CloudEntityDescription(
         key="battery_charge_today",
@@ -213,7 +213,7 @@ SENSORS_INVERTER = (
         native_unit_of_measurement="kWh",
         icon="mdi:transmission-tower-import",
         device_class=SensorDeviceClass.ENERGY,
-        state_class=SensorStateClass.TOTAL_INCREASING,
+        state_class=SensorStateClass.TOTAL,
     ),
     CloudEntityDescription(
         key="battery_discharge_today",
@@ -222,7 +222,7 @@ SENSORS_INVERTER = (
         native_unit_of_measurement="kWh",
         icon="mdi:transmission-tower-export",
         device_class=SensorDeviceClass.ENERGY,
-        state_class=SensorStateClass.TOTAL_INCREASING,
+        state_class=SensorStateClass.TOTAL,
     ),
     CloudEntityDescription(
         key="solar_total",
