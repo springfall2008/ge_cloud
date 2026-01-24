@@ -453,7 +453,7 @@ class CloudSensor(CoordinatorEntity[CloudCoordinator], SensorEntity):
             }
         elif self.coordinator.type == "evc_device" and self._attr_key == "last_session":
             sessions = self.coordinator.data.get("sessions", [])
-            smart_point = self.coordinator.data.get("point", {})
+            smart_point = self.coordinator.data.get("evc_point", {})
             session = {}
             consumption = 0
             consumption_24h = 0
@@ -506,7 +506,7 @@ class CloudSensor(CoordinatorEntity[CloudCoordinator], SensorEntity):
                 value = smart_point.get("power", None)
         elif self.coordinator.type == "evc_device":
             evc_device = self.coordinator.data.get("evc_device", {})
-            smart_point = self.coordinator.data.get("point", {})
+            smart_point = self.coordinator.data.get("evc_point", {})
 
             if key == 'status':
                 value = evc_device.get("status", None)

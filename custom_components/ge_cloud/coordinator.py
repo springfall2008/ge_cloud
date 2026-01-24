@@ -69,32 +69,48 @@ class CloudCoordinator(DataUpdateCoordinator):
         so entities can quickly look up their data.
         """
         if self.type == "inverter":
-            self.data["info"] = await self.api.async_get_device_info(self.serial)
-            self.data["status"] = await self.api.async_get_inverter_status(self.serial)
-            self.data["meter"] = await self.api.async_get_inverter_meter(self.serial)
+            info = await self.api.async_get_device_info(self.serial)
+            if info or first:
+                self.data["info"] = info
+            status = await self.api.async_get_inverter_status(self.serial)
+            if status or first:
+                self.data["status"] = status
+            meter = await self.api.async_get_inverter_meter(self.serial)
+            if meter or first:
+                self.data["meter"] = meter
 
             # Update registers every 5 minutes, other data every minute
             if first or (self.update_count == 0) or (self.polling and (self.update_count % 5) == 0):
-                self.data["settings"] = await self.api.async_get_inverter_settings(
-                    self.serial, first=first, previous=self.data.get("settings", {})
-                )
+                settings = await self.api.async_get_inverter_settings(self.serial, first=first, previous=self.data.get("settings", {}))
+                if settings or first:
+                    self.data["settings"] = settings
 
         if self.type == "smart_device":
             if first or (self.update_count == 0) or (self.polling and (self.update_count % 5) == 0):
-                self.data["smart_device"] = await self.api.async_get_smart_device(
-                    self.serial
-                )
-            self.data["point"] = await self.api.async_get_smart_device_data(self.serial)
+                smart_device = await self.api.async_get_smart_device(self.serial)
+                if smart_device or first:
+                    self.data["smart_device"] = smart_device
+            point = await self.api.async_get_smart_device_data(self.serial)
+            if point or first:
+                self.data["point"] = point
 
         if self.type == "evc_device":
-            self.data["evc_device"] = await self.api.async_get_evc_device(self.serial)
-            self.data["point"] = await self.api.async_get_evc_device_data(self.serial)
+            evc_device = await self.api.async_get_evc_device(self.serial)
+            if evc_device or first:
+                self.data["evc_device"] = evc_device
+            evc_point = await self.api.async_get_evc_device_data(self.serial)
+            if evc_point or first:
+                self.data["evc_point"] = evc_point
 
             if first or (self.update_count == 0) or (self.polling and (self.update_count % 10) == 0):
-                self.data["sessions"] = await self.api.async_get_evc_sessions(self.serial)
+                sessions = await self.api.async_get_evc_sessions(self.serial)
+                if sessions or first:
+                    self.data["sessions"] = sessions
 
             if first or (self.update_count == 0) or (self.polling and (self.update_count % 5) == 0):
-                self.data["commands"] = await self.api.async_get_evc_commands(self.serial)
+                commands = await self.api.async_get_evc_commands(self.serial)
+                if commands or first:
+                    self.data["commands"] = commands
 
         _LOGGER.info("Coordinator data Update for device {}".format(self.device_name))
         if not first:
